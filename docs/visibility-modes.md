@@ -72,7 +72,7 @@ blockEntities:
   revealRadius: 7            # used by modes 1 and 3
   remaskWhenLeaving: true    # re-mask when leaving reveal radius or LOS
   remaskDelay: 10            # seconds to wait before re-masking (debounce)
-  losMaxRevealDistance: 120   # used by modes 2 and 3
+  losMaxRevealDistance: 120  # used by modes 2 and 3
   blockTraceMode: 2          # 1 = center, 2 = face centers, 3 = corners, 4 = faces + corners
 
 entities:
@@ -80,8 +80,8 @@ entities:
   revealRadius: 12           # used by modes 1 and 3
   remaskWhenLeaving: true    # re-hide when leaving reveal radius or LOS
   remaskDelay: 10            # seconds to wait before re-hiding (debounce)
-  losMaxRevealDistance: 120   # used by modes 2 and 3
-  entityTraceMode: 3         # 1 = center, 2 = top+bottom, 3 = corners, 4 = corners+center
+  losMaxRevealDistance: 120  # used by modes 2 and 3
+  entityTraceMode: 3         # 1 = center, 2 = face centers, 3 = corners, 4 = faces + corners
 ```
 
 ### Re-masking Behaviour
