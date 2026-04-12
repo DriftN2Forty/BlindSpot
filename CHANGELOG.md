@@ -15,6 +15,7 @@
 - Deleted stale root `config.yml` — `src/main/resources/config.yml` is the single source of truth.
 
 ### Improvements
+- Added `blockTraceMode` for block entity LOS checks (modes 1–3) — raycasts can now target multiple face centers instead of only the block center. Default mode 2 (6 face centers) fixes blocks being hidden when partially exposed (e.g. a chest with a solid block on top but a visible front face).
 - Added packet-based item frame hiding (`ItemFrameService`) — `Player.hideEntity()` does not reliably hide item frames because the server re-sends them via chunk entity tracking. The new service uses `DESTROY_ENTITIES` / `SPAWN_ENTITY` packets directly, with a packet interceptor to prevent the server from re-showing suppressed frames.
 - Added LOS passthrough materials — raycasts can now pass through configurable block types (glass, fences, iron bars, etc.) with bounded re-tracing. Enabled by default; enable independently for blocks and/or entities via `losPassthrough.enableBlocks` / `losPassthrough.enableEntities`.
 - Replaced entity LOS check from opaque `Player.hasLineOfSight()` to `World.rayTraceBlocks()` with configurable multi-point bounding-box traces (`entityTraceMode` 1–4).

@@ -44,14 +44,47 @@ public final class ProximityService implements VisibilityChecker {
         if (!config.isWorldEnabled(viewer.getWorld())) return false;
 
         Location eye = viewer.getEyeLocation();
-        Location target = new Location(viewer.getWorld(),
-                blockPos.getBlockX() + 0.5, blockPos.getBlockY() + 0.5, blockPos.getBlockZ() + 0.5);
-        double totalDist = eye.distance(target);
-        if (totalDist > config.beLosMaxRevealDistance) return false;
-
         boolean passthrough = config.ptBlocksEnabled && !config.ptMaterials.isEmpty();
-        return rayReaches(viewer.getWorld(), eye, target.toVector(), totalDist,
-                blockPos, passthrough ? config.ptMaxRetrace : 0);
+        int maxRetrace = passthrough ? config.ptMaxRetrace : 0;
+
+        for (Vector point : blockTracePoints(blockPos)) {
+            double dist = eye.toVector().distance(point);
+            if (dist > config.beLosMaxRevealDistance) continue;
+            if (rayReaches(viewer.getWorld(), eye, point, dist, blockPos, maxRetrace)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Vector[] blockTracePoints(BlockVector bp) {
+        double bx = bp.getBlockX(), by = bp.getBlockY(), bz = bp.getBlockZ();
+        double cx = bx + 0.5, cy = by + 0.5, cz = bz + 0.5;
+        double inset = 0.05;
+
+        switch (config.beBlockTraceMode) {
+            case 2:
+                return new Vector[] {
+                    new Vector(cx, by + 1 - inset, cz), // top
+                    new Vector(cx, by + inset, cz),      // bottom
+                    new Vector(cx, cy, bz + inset),      // north
+                    new Vector(cx, cy, bz + 1 - inset),  // south
+                    new Vector(bx + 1 - inset, cy, cz),  // east
+                    new Vector(bx + inset, cy, cz)        // west
+                };
+            case 3:
+                return new Vector[] {
+                    new Vector(cx, cy, cz),               // center
+                    new Vector(cx, by + 1 - inset, cz), // top
+                    new Vector(cx, by + inset, cz),      // bottom
+                    new Vector(cx, cy, bz + inset),      // north
+                    new Vector(cx, cy, bz + 1 - inset),  // south
+                    new Vector(bx + 1 - inset, cy, cz),  // east
+                    new Vector(bx + inset, cy, cz)        // west
+                };
+            default: // mode 1
+                return new Vector[] { new Vector(cx, cy, cz) };
+        }
     }
 
     public boolean hasLineOfSightToEntity(Player viewer, Entity e) {

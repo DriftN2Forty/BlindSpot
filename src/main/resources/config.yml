@@ -19,6 +19,12 @@ blockEntities:
   remaskWhenLeaving: true    # re-mask block entities when leaving reveal radius or LOS
   remaskDelay: 10            # seconds to wait before re-masking (debounce)
   losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
+
+  # blockTraceMode controls how many points on the block are checked for LOS.
+  # More points = more accurate when a block is partially exposed, but more raycasts.
+  # 1 = center only, 2 = face centers (6 faces), 3 = center + face centers
+  blockTraceMode: 2
+
   placeholders:
     CHEST: CRAFTING_TABLE
     TRAPPED_CHEST: CRAFTING_TABLE

@@ -73,6 +73,7 @@ blockEntities:
   remaskWhenLeaving: true    # re-mask when leaving reveal radius or LOS
   remaskDelay: 10            # seconds to wait before re-masking (debounce)
   losMaxRevealDistance: 120   # used by modes 2 and 3
+  blockTraceMode: 2          # 1 = center, 2 = face centers, 3 = center + faces
 
 entities:
   mode: 2                    # 1 = Proximity, 2 = LOS, 3 = Proximity OR LOS
@@ -80,6 +81,7 @@ entities:
   remaskWhenLeaving: true    # re-hide when leaving reveal radius or LOS
   remaskDelay: 10            # seconds to wait before re-hiding (debounce)
   losMaxRevealDistance: 120   # used by modes 2 and 3
+  entityTraceMode: 3         # 1 = center, 2 = top+bottom, 3 = corners, 4 = corners+center
 ```
 
 ### Re-masking Behaviour
@@ -153,6 +155,36 @@ entities:
 Pure distance checks, no raycasting. Blocks and entities appear once the player
 is close enough regardless of walls. Cheap to run, still prevents long-range
 xray scanning.
+
+---
+
+## Trace Modes
+
+In LOS-based modes (2 and 3), the server casts rays from the player's eyes to
+the target. By default it checks multiple points — if **any** ray reaches the
+target, it's considered visible. More points improve accuracy around corners and
+partially-covered targets, at the cost of additional raycasts.
+
+### Block Trace Mode (`blockEntities.blockTraceMode`)
+
+Controls how many points on a block are checked for LOS.
+
+| Mode | Points | Description |
+|---|---|---|
+| 1 | 1 | Center only — single ray to `(x+0.5, y+0.5, z+0.5)`. Cheapest but can miss blocks that are partially exposed (e.g. a chest with a solid block on top). |
+| 2 | 6 | Face centers — one ray per face (top, bottom, north, south, east, west), slightly inset. **Default.** Catches blocks that have any face visible. |
+| 3 | 7 | Center + face centers — combines modes 1 and 2. Most accurate, 7 raycasts. |
+
+### Entity Trace Mode (`entities.entityTraceMode`)
+
+Controls how many points on the entity bounding box are checked for LOS.
+
+| Mode | Points | Description |
+|---|---|---|
+| 1 | 1 | Center only. |
+| 2 | 2 | Top-center + bottom-center. |
+| 3 | 4 | Four diagonal corners. **Default.** |
+| 4 | 5 | Four diagonal corners + center. |
 
 ---
 
