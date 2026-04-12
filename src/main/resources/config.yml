@@ -22,7 +22,7 @@ blockEntities:
 
   # blockTraceMode controls how many points on the block are checked for LOS.
   # More points = more accurate when a block is partially exposed, but more raycasts.
-  # 1 = center only, 2 = face centers (6 faces), 3 = center + face centers
+  # 1 = center only, 2 = face centers (6 faces), 3 = face centers + 8 corners
   blockTraceMode: 2
 
   placeholders:

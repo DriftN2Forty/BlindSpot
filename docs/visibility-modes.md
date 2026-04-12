@@ -173,7 +173,7 @@ Controls how many points on a block are checked for LOS.
 |---|---|---|
 | 1 | 1 | Center only — single ray to `(x+0.5, y+0.5, z+0.5)`. Cheapest but can miss blocks that are partially exposed (e.g. a chest with a solid block on top). |
 | 2 | 6 | Face centers — one ray per face (top, bottom, north, south, east, west), slightly inset. **Default.** Catches blocks that have any face visible. |
-| 3 | 7 | Center + face centers — combines modes 1 and 2. Most accurate, 7 raycasts. |
+| 3 | 14 | Face centers + 8 corners. Most accurate but most raycasts. |
 
 ### Entity Trace Mode (`entities.entityTraceMode`)
 

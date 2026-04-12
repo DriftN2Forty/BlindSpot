@@ -74,13 +74,22 @@ public final class ProximityService implements VisibilityChecker {
                 };
             case 3:
                 return new Vector[] {
-                    new Vector(cx, cy, cz),               // center
+                    // face centers
                     new Vector(cx, by + 1 - inset, cz), // top
                     new Vector(cx, by + inset, cz),      // bottom
                     new Vector(cx, cy, bz + inset),      // north
                     new Vector(cx, cy, bz + 1 - inset),  // south
                     new Vector(bx + 1 - inset, cy, cz),  // east
-                    new Vector(bx + inset, cy, cz)        // west
+                    new Vector(bx + inset, cy, cz),       // west
+                    // corners
+                    new Vector(bx + inset, by + 1 - inset, bz + inset),
+                    new Vector(bx + 1 - inset, by + 1 - inset, bz + inset),
+                    new Vector(bx + inset, by + 1 - inset, bz + 1 - inset),
+                    new Vector(bx + 1 - inset, by + 1 - inset, bz + 1 - inset),
+                    new Vector(bx + inset, by + inset, bz + inset),
+                    new Vector(bx + 1 - inset, by + inset, bz + inset),
+                    new Vector(bx + inset, by + inset, bz + 1 - inset),
+                    new Vector(bx + 1 - inset, by + inset, bz + 1 - inset)
                 };
             default: // mode 1
                 return new Vector[] { new Vector(cx, cy, cz) };
