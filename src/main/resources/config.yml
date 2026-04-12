@@ -1,0 +1,220 @@
+# Global enabling of BlindSpot. Set to false to disable all features without uninstalling the plugin.
+enabled: true
+
+# World filtering controls which worlds BlindSpot is active in.
+# Use the world's folder name (e.g. "world", "world_nether", "world_the_end").
+# The overworld folder name matches level-name in server.properties (default: "world").
+#
+# include: [] (empty) = all worlds are protected.
+# include: [world, world_nether] = ONLY these worlds are protected.
+# exclude: [world_the_end] = these worlds are never protected (overrides include).
+worlds:
+  include: []
+  exclude: []
+
+blockEntities:
+  enabled: true
+  mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
+  revealRadius: 12           # used by modes 1 and 3
+  remaskWhenLeaving: true    # re-mask block entities when leaving reveal radius or LOS
+  remaskDelay: 10            # seconds to wait before re-masking (debounce)
+  losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
+  placeholders:
+    CHEST: CRAFTING_TABLE
+    TRAPPED_CHEST: CRAFTING_TABLE
+    BARREL: OAK_PLANKS
+    ENDER_CHEST: OBSIDIAN
+    HOPPER: POLISHED_ANDESITE
+    FURNACE: STONE
+    BLAST_FURNACE: STONE
+    SMOKER: STONE
+    LECTERN: OAK_PLANKS
+    SPAWNER: DEEPSLATE
+    JUKEBOX: OAK_PLANKS
+    BREWING_STAND: COBBLESTONE
+    CAMPFIRE: COBBLESTONE
+    SOUL_CAMPFIRE: COBBLESTONE
+    BEE_NEST: OAK_PLANKS
+    BEEHIVE: OAK_PLANKS
+    COMPOSTER: OAK_PLANKS
+    CARTOGRAPHY_TABLE: OAK_PLANKS
+    SMITHING_TABLE: OAK_PLANKS
+    STONECUTTER: STONE
+    ENCHANTING_TABLE: OBSIDIAN
+    BELL: GOLD_BLOCK
+  maskMaterials:
+    - CHEST
+    - TRAPPED_CHEST
+    - BARREL
+    - ENDER_CHEST
+    - HOPPER
+    - FURNACE
+    - BLAST_FURNACE
+    - SMOKER
+    - LECTERN
+    - SPAWNER
+    - JUKEBOX
+    - BREWING_STAND
+    - CAMPFIRE
+    - SOUL_CAMPFIRE
+    - BEE_NEST
+    - BEEHIVE
+    - COMPOSTER
+    - CARTOGRAPHY_TABLE
+    - SMITHING_TABLE
+    - STONECUTTER
+    - ENCHANTING_TABLE
+    - BELL
+
+entities:
+  enabled: true
+  mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
+  revealRadius: 12           # used by modes 1 and 3
+  remaskWhenLeaving: true    # re-hide entities when leaving reveal radius or LOS
+  remaskDelay: 10            # seconds to wait before re-hiding (debounce)
+  losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
+  
+  # entityTraceMode controls how many points on the entity bounding box are checked.
+  # More points = more accurate around corners, but more raycasts per entity.
+  # 1 = center only, 2 = top-center + bottom-center, 3 = four corners, 4 = four corners + center
+  entityTraceMode: 3
+  
+  suppressTypes:
+    - VILLAGER
+    - IRON_GOLEM
+    - ARMOR_STAND
+    - ITEM_FRAME
+    - GLOW_ITEM_FRAME
+    - ALLAY
+    - COW
+    - SHEEP
+    - CHICKEN
+    - PIG
+    - CAMEL
+    - HORSE
+    - MULE
+    - DONKEY
+    - LLAMA
+    - RABBIT
+    - CAT
+    - TURTLE
+    - AXOLOTL
+    - SNIFFER
+    - ARMADILLO
+
+# LOS Passthrough — allows raycasts to pass through certain block types.
+# When a ray hits a passthrough material, it continues through instead of stopping.
+# Only affects LOS checks (modes 2 and 3). Has no effect on proximity (mode 1).
+#
+# WARNING: Enabling this adds extra raycasts per visibility check (up to maxRetrace
+# per target). On busy servers with many players and dense passthrough blocks this
+# can measurably increase CPU usage. Start with a small maxRetrace and test.
+losPassthrough:
+
+  enableBlocks: true      # apply to block-entity LOS checks
+  enableEntities: true    # apply to entity LOS checks
+
+  maxRetrace: 5           # max passthrough re-traces per ray (caps runaway cost)
+
+  materials:
+    - OAK_FENCE
+    - SPRUCE_FENCE
+    - BIRCH_FENCE
+    - JUNGLE_FENCE
+    - ACACIA_FENCE
+    - DARK_OAK_FENCE
+    - MANGROVE_FENCE
+    - CHERRY_FENCE
+    - BAMBOO_FENCE
+    - CRIMSON_FENCE
+    - WARPED_FENCE
+    - PALE_OAK_FENCE
+    - OAK_FENCE_GATE
+    - SPRUCE_FENCE_GATE
+    - BIRCH_FENCE_GATE
+    - JUNGLE_FENCE_GATE
+    - ACACIA_FENCE_GATE
+    - DARK_OAK_FENCE_GATE
+    - MANGROVE_FENCE_GATE
+    - CHERRY_FENCE_GATE
+    - BAMBOO_FENCE_GATE
+    - CRIMSON_FENCE_GATE
+    - WARPED_FENCE_GATE
+    - PALE_OAK_FENCE_GATE
+    - GLASS_PANE
+    - WHITE_STAINED_GLASS_PANE
+    - ORANGE_STAINED_GLASS_PANE
+    - MAGENTA_STAINED_GLASS_PANE
+    - LIGHT_BLUE_STAINED_GLASS_PANE
+    - YELLOW_STAINED_GLASS_PANE
+    - LIME_STAINED_GLASS_PANE
+    - PINK_STAINED_GLASS_PANE
+    - GRAY_STAINED_GLASS_PANE
+    - LIGHT_GRAY_STAINED_GLASS_PANE
+    - CYAN_STAINED_GLASS_PANE
+    - PURPLE_STAINED_GLASS_PANE
+    - BLUE_STAINED_GLASS_PANE
+    - BROWN_STAINED_GLASS_PANE
+    - GREEN_STAINED_GLASS_PANE
+    - RED_STAINED_GLASS_PANE
+    - BLACK_STAINED_GLASS_PANE
+    - GLASS
+    - WHITE_STAINED_GLASS
+    - ORANGE_STAINED_GLASS
+    - MAGENTA_STAINED_GLASS
+    - LIGHT_BLUE_STAINED_GLASS
+    - YELLOW_STAINED_GLASS
+    - LIME_STAINED_GLASS
+    - PINK_STAINED_GLASS
+    - GRAY_STAINED_GLASS
+    - LIGHT_GRAY_STAINED_GLASS
+    - CYAN_STAINED_GLASS
+    - PURPLE_STAINED_GLASS
+    - BLUE_STAINED_GLASS
+    - BROWN_STAINED_GLASS
+    - GREEN_STAINED_GLASS
+    - RED_STAINED_GLASS
+    - BLACK_STAINED_GLASS
+    - TINTED_GLASS
+    - IRON_BARS
+    - CHAIN
+    - COBWEB
+    - LADDER
+    - VINE
+    - CAVE_VINES
+    - CAVE_VINES_PLANT
+    - TWISTING_VINES
+    - TWISTING_VINES_PLANT
+    - WEEPING_VINES
+    - WEEPING_VINES_PLANT
+    - SCAFFOLDING
+    - POINTED_DRIPSTONE
+    - LIGHTNING_ROD
+    - END_ROD
+    - CANDLE
+    - WHITE_CANDLE
+    - ORANGE_CANDLE
+    - MAGENTA_CANDLE
+    - LIGHT_BLUE_CANDLE
+    - YELLOW_CANDLE
+    - LIME_CANDLE
+    - PINK_CANDLE
+    - GRAY_CANDLE
+    - LIGHT_GRAY_CANDLE
+    - CYAN_CANDLE
+    - PURPLE_CANDLE
+    - BLUE_CANDLE
+    - BROWN_CANDLE
+    - GREEN_CANDLE
+    - RED_CANDLE
+    - BLACK_CANDLE
+
+tpsGuard:
+  enabled: true
+  minTps: 18.5
+
+permissions:
+  bypass: "blindspot.bypass"
+
+debug:
+  verbose: false

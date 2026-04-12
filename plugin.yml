@@ -1,0 +1,16 @@
+name: BlindSpot
+main: dev.driftn2forty.blindspot.BlindSpotPlugin
+version: '${version}'
+api-version: '1.21'
+authors: [ "driftn2forty" ]
+softdepend: [ packetevents ]
+commands:
+  blindspot:
+    description: BlindSpot admin commands
+    usage: /blindspot reload
+    permission: blindspot.reload
+permissions:
+  blindspot.reload:
+    default: op
+  blindspot.bypass:
+    default: false
