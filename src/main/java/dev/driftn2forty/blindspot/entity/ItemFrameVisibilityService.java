@@ -12,6 +12,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSp
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.guard.TpsThrottle;
 import dev.driftn2forty.blindspot.proximity.VisibilityChecker;
+import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -33,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * tracker resync when re-showing.  A packet interceptor prevents the server
  * from re-sending suppressed frames between ticks.
  */
-public final class ItemFrameService {
+public final class ItemFrameVisibilityService {
 
     private static final Set<EntityType> FRAME_TYPES =
             EnumSet.of(EntityType.ITEM_FRAME, EntityType.GLOW_ITEM_FRAME);
@@ -49,8 +50,9 @@ public final class ItemFrameService {
     /** player UUID → (entity ID → entity UUID) for suppressed item frames */
     private final Map<UUID, Map<Integer, UUID>> suppressedFrames = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Integer, Long>> remaskTimers = new ConcurrentHashMap<>();
+    private final TickTimings timings = new TickTimings();
 
-    public ItemFrameService(Plugin plugin, PluginConfig config,
+    public ItemFrameVisibilityService(Plugin plugin, PluginConfig config,
                             VisibilityChecker proximity, TpsThrottle tpsGuard) {
         this.plugin = plugin;
         this.config = config;
@@ -91,12 +93,46 @@ public final class ItemFrameService {
         remaskTimers.clear();
     }
 
+    /** Restart after config reload — preserves suppressed-frame state. */
+    public void restart() {
+        if (task != null) task.cancel();
+        task = null;
+        remaskTimers.clear();
+
+        boolean hasFrameTypes = false;
+        for (EntityType t : FRAME_TYPES) {
+            if (config.entitySuppressTypes.contains(t)) { hasFrameTypes = true; break; }
+        }
+
+        if (!config.enabled || !config.entityEnabled || !hasFrameTypes) {
+            // Feature now disabled — full cleanup
+            if (packetListener != null) {
+                PacketEvents.getAPI().getEventManager().unregisterListener(packetListener);
+                packetListener = null;
+            }
+            suppressedFrames.clear();
+            return;
+        }
+
+        // Ensure packet listener is registered
+        if (packetListener == null) {
+            this.packetListener = new FrameSpawnInterceptor();
+            PacketEvents.getAPI().getEventManager().registerListener(packetListener);
+        }
+
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 10L);
+    }
+
+    public TickTimings getTimings() { return timings; }
+
     // ── tick ────────────────────────────────────────────────────────
 
     private void tick() {
         if (!config.enabled || !config.entityEnabled) return;
         if (!tpsGuard.allowHeavyWork()) return;
 
+        long start = System.nanoTime();
+        try {
         // purge offline players
         suppressedFrames.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
         remaskTimers.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
@@ -137,6 +173,9 @@ public final class ItemFrameService {
                     sendDestroyPacket(p, e.getEntityId());
                 }
             }
+        }
+        } finally {
+            timings.record(System.nanoTime() - start);
         }
     }
 

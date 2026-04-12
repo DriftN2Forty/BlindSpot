@@ -3,14 +3,15 @@ package dev.driftn2forty.blindspot;
 import dev.driftn2forty.blindspot.command.ReloadCommand;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.entity.EntityVisibilityService;
-import dev.driftn2forty.blindspot.entity.ItemFrameService;
+import dev.driftn2forty.blindspot.entity.ItemFrameVisibilityService;
 import dev.driftn2forty.blindspot.guard.TpsGuard;
 import dev.driftn2forty.blindspot.mask.BlockEntityMasker;
 import dev.driftn2forty.blindspot.mask.BlockChangeListener;
 import dev.driftn2forty.blindspot.mask.ChunkBECache;
 import dev.driftn2forty.blindspot.mask.PlayerMaskState;
-import dev.driftn2forty.blindspot.proximity.MovementRevealer;
+import dev.driftn2forty.blindspot.proximity.BlockEntityVisibilityService;
 import dev.driftn2forty.blindspot.proximity.ProximityService;
+import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
@@ -24,9 +25,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private PlayerMaskState maskState;
     private BlockEntityMasker blockEntityMasker;
     private EntityVisibilityService entityVisibilityService;
-    private ItemFrameService itemFrameService;
+    private ItemFrameVisibilityService itemFrameVisibilityService;
     private TpsGuard tpsGuard;
-    private MovementRevealer movementRevealer;
+    private BlockEntityVisibilityService blockEntityVisibilityService;
 
     @Override
     public void onEnable() {
@@ -53,8 +54,10 @@ public final class BlindSpotPlugin extends JavaPlugin {
             default -> "Unknown";
         }));
         metrics.addCustomChart(new SimplePie("entity_trace_mode", () -> switch (this.pluginConfig.ptEntityTraceMode) {
-            case 1 -> "Bounding Box";
-            case 2 -> "Eye Location";
+            case 1 -> "Center";
+            case 2 -> "Face Centers";
+            case 3 -> "Corners";
+            case 4 -> "Face Centers + Corners";
             default -> "Unknown";
         }));
         metrics.addCustomChart(new SimplePie("pt_blocks_enabled", () -> String.valueOf(this.pluginConfig.ptBlocksEnabled)));
@@ -78,13 +81,13 @@ public final class BlindSpotPlugin extends JavaPlugin {
                 this.proximityService, this.tpsGuard);
         this.entityVisibilityService.start();
 
-        this.itemFrameService = new ItemFrameService(this, this.pluginConfig,
+        this.itemFrameVisibilityService = new ItemFrameVisibilityService(this, this.pluginConfig,
                 this.proximityService, this.tpsGuard);
-        this.itemFrameService.start();
+        this.itemFrameVisibilityService.start();
 
-        this.movementRevealer = new MovementRevealer(this, this.pluginConfig, this.proximityService,
+        this.blockEntityVisibilityService = new BlockEntityVisibilityService(this, this.pluginConfig, this.proximityService,
                 this.beCache, this.maskState, this.tpsGuard);
-        this.movementRevealer.start();
+        this.blockEntityVisibilityService.start();
 
         ReloadCommand reloadCmd = new ReloadCommand(this);
         getCommand("blindspot").setExecutor(reloadCmd);
@@ -100,11 +103,11 @@ public final class BlindSpotPlugin extends JavaPlugin {
         if (this.entityVisibilityService != null) {
             this.entityVisibilityService.stop();
         }
-        if (this.itemFrameService != null) {
-            this.itemFrameService.stop();
+        if (this.itemFrameVisibilityService != null) {
+            this.itemFrameVisibilityService.stop();
         }
-        if (this.movementRevealer != null) {
-            this.movementRevealer.stop();
+        if (this.blockEntityVisibilityService != null) {
+            this.blockEntityVisibilityService.stop();
         }
         getLogger().info("BlindSpot disabled.");
     }
@@ -113,28 +116,35 @@ public final class BlindSpotPlugin extends JavaPlugin {
         reloadConfig();
         this.pluginConfig.reload();
         this.beCache.clear();
-        this.maskState.clearAll();
 
         if (this.blockEntityMasker != null) {
             this.blockEntityMasker.unregister();
             this.blockEntityMasker.register();
         }
         if (this.entityVisibilityService != null) {
-            this.entityVisibilityService.stop();
-            this.entityVisibilityService.start();
+            this.entityVisibilityService.restart();
         }
-        if (this.itemFrameService != null) {
-            this.itemFrameService.stop();
-            this.itemFrameService.start();
+        if (this.itemFrameVisibilityService != null) {
+            this.itemFrameVisibilityService.restart();
         }
-        if (this.movementRevealer != null) {
-            this.movementRevealer.stop();
-            this.movementRevealer.start();
+        if (this.blockEntityVisibilityService != null) {
+            this.blockEntityVisibilityService.restart();
         }
         getLogger().info("BlindSpot config reloaded.");
     }
 
     public PluginConfig getPluginConfig() {
         return this.pluginConfig;
+    }
+
+    public TickTimings[] getEntityTimings() {
+        return new TickTimings[]{
+                entityVisibilityService != null ? entityVisibilityService.getTimings() : null,
+                itemFrameVisibilityService != null ? itemFrameVisibilityService.getTimings() : null
+        };
+    }
+
+    public TickTimings getBlockEntityTimings() {
+        return blockEntityVisibilityService != null ? blockEntityVisibilityService.getTimings() : null;
     }
 }

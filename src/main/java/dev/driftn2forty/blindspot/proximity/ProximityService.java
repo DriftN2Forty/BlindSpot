@@ -74,6 +74,17 @@ public final class ProximityService implements VisibilityChecker {
                 };
             case 3:
                 return new Vector[] {
+                    new Vector(bx + inset, by + 1 - inset, bz + inset),
+                    new Vector(bx + 1 - inset, by + 1 - inset, bz + inset),
+                    new Vector(bx + inset, by + 1 - inset, bz + 1 - inset),
+                    new Vector(bx + 1 - inset, by + 1 - inset, bz + 1 - inset),
+                    new Vector(bx + inset, by + inset, bz + inset),
+                    new Vector(bx + 1 - inset, by + inset, bz + inset),
+                    new Vector(bx + inset, by + inset, bz + 1 - inset),
+                    new Vector(bx + 1 - inset, by + inset, bz + 1 - inset)
+                };
+            case 4:
+                return new Vector[] {
                     // face centers
                     new Vector(cx, by + 1 - inset, cz), // top
                     new Vector(cx, by + inset, cz),      // bottom
@@ -119,29 +130,51 @@ public final class ProximityService implements VisibilityChecker {
 
     private Vector[] entityTracePoints(Entity e) {
         BoundingBox bb = e.getBoundingBox();
-        double cx = bb.getCenterX(), cz = bb.getCenterZ();
-        double minY = bb.getMinY(), maxY = bb.getMaxY(), cy = bb.getCenterY();
+        double cx = bb.getCenterX(), cy = bb.getCenterY(), cz = bb.getCenterZ();
+        double minX = bb.getMinX(), maxX = bb.getMaxX();
+        double minY = bb.getMinY(), maxY = bb.getMaxY();
+        double minZ = bb.getMinZ(), maxZ = bb.getMaxZ();
+        double inset = 0.1;
 
         switch (config.ptEntityTraceMode) {
             case 2:
                 return new Vector[] {
-                    new Vector(cx, maxY - 0.1, cz),
-                    new Vector(cx, minY + 0.1, cz)
+                    new Vector(cx, maxY - inset, cz),  // top
+                    new Vector(cx, minY + inset, cz),  // bottom
+                    new Vector(cx, cy, minZ + inset),  // north
+                    new Vector(cx, cy, maxZ - inset),  // south
+                    new Vector(maxX - inset, cy, cz),  // east
+                    new Vector(minX + inset, cy, cz)   // west
                 };
             case 3:
                 return new Vector[] {
-                    new Vector(bb.getMinX() + 0.1, maxY - 0.1, bb.getMinZ() + 0.1),
-                    new Vector(bb.getMaxX() - 0.1, maxY - 0.1, bb.getMaxZ() - 0.1),
-                    new Vector(bb.getMinX() + 0.1, minY + 0.1, bb.getMaxZ() - 0.1),
-                    new Vector(bb.getMaxX() - 0.1, minY + 0.1, bb.getMinZ() + 0.1)
+                    new Vector(minX + inset, maxY - inset, minZ + inset),
+                    new Vector(maxX - inset, maxY - inset, minZ + inset),
+                    new Vector(minX + inset, maxY - inset, maxZ - inset),
+                    new Vector(maxX - inset, maxY - inset, maxZ - inset),
+                    new Vector(minX + inset, minY + inset, minZ + inset),
+                    new Vector(maxX - inset, minY + inset, minZ + inset),
+                    new Vector(minX + inset, minY + inset, maxZ - inset),
+                    new Vector(maxX - inset, minY + inset, maxZ - inset)
                 };
             case 4:
                 return new Vector[] {
-                    new Vector(cx, cy, cz),
-                    new Vector(bb.getMinX() + 0.1, maxY - 0.1, bb.getMinZ() + 0.1),
-                    new Vector(bb.getMaxX() - 0.1, maxY - 0.1, bb.getMaxZ() - 0.1),
-                    new Vector(bb.getMinX() + 0.1, minY + 0.1, bb.getMaxZ() - 0.1),
-                    new Vector(bb.getMaxX() - 0.1, minY + 0.1, bb.getMinZ() + 0.1)
+                    // face centers
+                    new Vector(cx, maxY - inset, cz),  // top
+                    new Vector(cx, minY + inset, cz),  // bottom
+                    new Vector(cx, cy, minZ + inset),  // north
+                    new Vector(cx, cy, maxZ - inset),  // south
+                    new Vector(maxX - inset, cy, cz),  // east
+                    new Vector(minX + inset, cy, cz),  // west
+                    // corners
+                    new Vector(minX + inset, maxY - inset, minZ + inset),
+                    new Vector(maxX - inset, maxY - inset, minZ + inset),
+                    new Vector(minX + inset, maxY - inset, maxZ - inset),
+                    new Vector(maxX - inset, maxY - inset, maxZ - inset),
+                    new Vector(minX + inset, minY + inset, minZ + inset),
+                    new Vector(maxX - inset, minY + inset, minZ + inset),
+                    new Vector(minX + inset, minY + inset, maxZ - inset),
+                    new Vector(maxX - inset, minY + inset, maxZ - inset)
                 };
             default: // mode 1
                 return new Vector[] { new Vector(cx, cy, cz) };

@@ -7,10 +7,12 @@ softdepend: [ packetevents ]
 commands:
   blindspot:
     description: BlindSpot admin commands
-    usage: /blindspot reload
+    usage: /blindspot <reload|timings>
     permission: blindspot.reload
 permissions:
   blindspot.reload:
+    default: op
+  blindspot.timings:
     default: op
   blindspot.bypass:
     default: false

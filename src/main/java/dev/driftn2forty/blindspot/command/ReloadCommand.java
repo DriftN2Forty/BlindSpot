@@ -1,6 +1,7 @@
 package dev.driftn2forty.blindspot.command;
 
 import dev.driftn2forty.blindspot.BlindSpotPlugin;
+import dev.driftn2forty.blindspot.util.TickTimings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
@@ -8,6 +9,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,19 +23,38 @@ public final class ReloadCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1 && sender.hasPermission("blindspot.reload")) {
-            if ("reload".startsWith(args[0].toLowerCase())) {
-                return List.of("reload");
+        if (args.length == 1) {
+            List<String> completions = new ArrayList<>();
+            if (sender.hasPermission("blindspot.reload") && "reload".startsWith(args[0].toLowerCase())) {
+                completions.add("reload");
             }
+            if (sender.hasPermission("blindspot.timings") && "timings".startsWith(args[0].toLowerCase())) {
+                completions.add("timings");
+            }
+            return completions;
         }
         return Collections.emptyList();
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0) {
+            sender.sendMessage(Component.text("Usage: /blindspot <reload|timings>", NamedTextColor.YELLOW));
+            return true;
+        }
+
+        switch (args[0].toLowerCase()) {
+            case "reload" -> handleReload(sender);
+            case "timings" -> handleTimings(sender);
+            default -> sender.sendMessage(Component.text("Usage: /blindspot <reload|timings>", NamedTextColor.YELLOW));
+        }
+        return true;
+    }
+
+    private void handleReload(CommandSender sender) {
         if (!sender.hasPermission("blindspot.reload")) {
             sender.sendMessage(Component.text("You don't have permission.", NamedTextColor.RED));
-            return true;
+            return;
         }
         try {
             plugin.reloadBlindSpot();
@@ -42,6 +63,72 @@ public final class ReloadCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Component.text("Reload failed: " + e.getMessage(), NamedTextColor.RED));
             plugin.getLogger().severe("Config reload error: " + e.getMessage());
         }
-        return true;
+    }
+
+    private void handleTimings(CommandSender sender) {
+        if (!sender.hasPermission("blindspot.timings")) {
+            sender.sendMessage(Component.text("You don't have permission.", NamedTextColor.RED));
+            return;
+        }
+
+        sender.sendMessage(Component.text("─── BlindSpot Timings ───", NamedTextColor.GOLD));
+
+        double totalMin = 0, totalMax = 0, totalAvg = 0;
+
+        double[] entityStats = printCombinedTimings(sender, "Entities", plugin.getEntityTimings());
+        totalMin += entityStats[0]; totalMax += entityStats[1]; totalAvg += entityStats[2];
+
+        TickTimings blocks = plugin.getBlockEntityTimings();
+        if (blocks != null && blocks.count() > 0) {
+            totalMin += blocks.minMs(); totalMax += blocks.maxMs(); totalAvg += blocks.averageMs();
+        }
+        printTimings(sender, "Blocks", blocks);
+
+        sender.sendMessage(Component.text("Total: ", NamedTextColor.WHITE)
+                .append(Component.text(String.format("min %.3fms", totalMin), NamedTextColor.AQUA))
+                .append(Component.text(" | ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("max %.3fms", totalMax), NamedTextColor.YELLOW))
+                .append(Component.text(" | ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("avg %.3fms", totalAvg), NamedTextColor.GREEN)));
+    }
+
+    /** Returns [min, max, avg] sums for the combined timings. */
+    private double[] printCombinedTimings(CommandSender sender, String name, TickTimings[] timingsArray) {
+        double minSum = 0, maxSum = 0, avgSum = 0;
+        boolean hasData = false;
+        for (TickTimings t : timingsArray) {
+            if (t != null && t.count() > 0) {
+                minSum += t.minMs();
+                maxSum += t.maxMs();
+                avgSum += t.averageMs();
+                hasData = true;
+            }
+        }
+        if (!hasData) {
+            sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
+                    .append(Component.text("no data", NamedTextColor.GRAY)));
+            return new double[]{0, 0, 0};
+        }
+        sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
+                .append(Component.text(String.format("min %.3fms", minSum), NamedTextColor.AQUA))
+                .append(Component.text(" | ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("max %.3fms", maxSum), NamedTextColor.YELLOW))
+                .append(Component.text(" | ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("avg %.3fms", avgSum), NamedTextColor.GREEN)));
+        return new double[]{minSum, maxSum, avgSum};
+    }
+
+    private void printTimings(CommandSender sender, String name, TickTimings timings) {
+        if (timings == null || timings.count() == 0) {
+            sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
+                    .append(Component.text("no data", NamedTextColor.GRAY)));
+            return;
+        }
+        sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
+                .append(Component.text(String.format("min %.3fms", timings.minMs()), NamedTextColor.AQUA))
+                .append(Component.text(" | ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("max %.3fms", timings.maxMs()), NamedTextColor.YELLOW))
+                .append(Component.text(" | ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("avg %.3fms", timings.averageMs()), NamedTextColor.GREEN)));
     }
 }

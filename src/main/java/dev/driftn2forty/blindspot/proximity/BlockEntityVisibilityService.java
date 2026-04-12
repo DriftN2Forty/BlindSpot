@@ -4,6 +4,7 @@ import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.guard.TpsThrottle;
 import dev.driftn2forty.blindspot.mask.BlockEntityCache;
 import dev.driftn2forty.blindspot.mask.MaskStateTracker;
+import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class MovementRevealer {
+public final class BlockEntityVisibilityService {
 
     private final Plugin plugin;
     private final PluginConfig config;
@@ -28,8 +29,9 @@ public final class MovementRevealer {
     private final TpsThrottle tpsGuard;
     private BukkitTask task;
     private final Map<UUID, Map<BlockVector, Long>> remaskTimers = new ConcurrentHashMap<>();
+    private final TickTimings timings = new TickTimings();
 
-    public MovementRevealer(Plugin plugin, PluginConfig config, VisibilityChecker proximity,
+    public BlockEntityVisibilityService(Plugin plugin, PluginConfig config, VisibilityChecker proximity,
                             BlockEntityCache beCache, MaskStateTracker maskState, TpsThrottle tpsGuard) {
         this.plugin = plugin;
         this.config = config;
@@ -49,10 +51,23 @@ public final class MovementRevealer {
         task = null;
     }
 
+    /** Restart after config reload — preserves mask state. */
+    public void restart() {
+        if (task != null) task.cancel();
+        task = null;
+        remaskTimers.clear();
+        if (!config.enabled || !config.beEnabled) return;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 8L);
+    }
+
+    public TickTimings getTimings() { return timings; }
+
     private void tick() {
         if (!config.enabled || !config.beEnabled) return;
         if (!tpsGuard.allowHeavyWork()) return;
 
+        long start = System.nanoTime();
+        try {
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!p.isOnline() || !config.isWorldEnabled(p.getWorld())
                     || p.hasPermission(config.bypassPermission)) continue;
@@ -99,6 +114,9 @@ public final class MovementRevealer {
                     }
                 }
             }
+        }
+        } finally {
+            timings.record(System.nanoTime() - start);
         }
     }
 }

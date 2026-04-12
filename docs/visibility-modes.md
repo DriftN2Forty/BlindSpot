@@ -73,7 +73,7 @@ blockEntities:
   remaskWhenLeaving: true    # re-mask when leaving reveal radius or LOS
   remaskDelay: 10            # seconds to wait before re-masking (debounce)
   losMaxRevealDistance: 120   # used by modes 2 and 3
-  blockTraceMode: 2          # 1 = center, 2 = face centers, 3 = center + faces
+  blockTraceMode: 2          # 1 = center, 2 = face centers, 3 = corners, 4 = faces + corners
 
 entities:
   mode: 2                    # 1 = Proximity, 2 = LOS, 3 = Proximity OR LOS
@@ -173,7 +173,8 @@ Controls how many points on a block are checked for LOS.
 |---|---|---|
 | 1 | 1 | Center only — single ray to `(x+0.5, y+0.5, z+0.5)`. Cheapest but can miss blocks that are partially exposed (e.g. a chest with a solid block on top). |
 | 2 | 6 | Face centers — one ray per face (top, bottom, north, south, east, west), slightly inset. **Default.** Catches blocks that have any face visible. |
-| 3 | 14 | Face centers + 8 corners. Most accurate but most raycasts. |
+| 3 | 8 | All 8 corners of the block. Catches diagonal exposures that face-center checks can miss. |
+| 4 | 14 | Face centers + 8 corners. Most accurate but most raycasts. |
 
 ### Entity Trace Mode (`entities.entityTraceMode`)
 
@@ -182,9 +183,9 @@ Controls how many points on the entity bounding box are checked for LOS.
 | Mode | Points | Description |
 |---|---|---|
 | 1 | 1 | Center only. |
-| 2 | 2 | Top-center + bottom-center. |
-| 3 | 4 | Four diagonal corners. **Default.** |
-| 4 | 5 | Four diagonal corners + center. |
+| 2 | 6 | Face centers — one ray per face of the 3D bounding box (top, bottom, north, south, east, west). |
+| 3 | 8 | All 8 corners of the bounding box. **Default.** |
+| 4 | 14 | Face centers + 8 corners. Most accurate but most raycasts. |
 
 ---
 

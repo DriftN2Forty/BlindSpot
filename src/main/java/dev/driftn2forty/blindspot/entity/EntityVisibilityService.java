@@ -10,6 +10,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import dev.driftn2forty.blindspot.util.TickTimings;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -24,6 +26,7 @@ public final class EntityVisibilityService {
     private BukkitTask task;
     private final Map<UUID, Set<UUID>> hiddenByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> remaskTimers = new ConcurrentHashMap<>();
+    private final TickTimings timings = new TickTimings();
 
     public EntityVisibilityService(Plugin plugin, PluginConfig config,
                                    VisibilityChecker proximity, TpsThrottle tpsGuard) {
@@ -42,7 +45,23 @@ public final class EntityVisibilityService {
     public void stop() {
         if (task != null) task.cancel();
         task = null;
+        revealAll();
+    }
 
+    /** Restart after config reload — preserves hidden-entity state. */
+    public void restart() {
+        if (task != null) task.cancel();
+        task = null;
+        remaskTimers.clear();
+
+        if (!config.enabled || !config.entityEnabled) {
+            revealAll();
+            return;
+        }
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 10L);
+    }
+
+    private void revealAll() {
         for (Player p : Bukkit.getOnlinePlayers()) {
             Set<UUID> set = hiddenByPlayer.getOrDefault(p.getUniqueId(), Collections.emptySet());
             if (set.isEmpty()) continue;
@@ -61,10 +80,14 @@ public final class EntityVisibilityService {
         hiddenByPlayer.clear();
     }
 
+    public TickTimings getTimings() { return timings; }
+
     private void tick() {
         if (!config.enabled || !config.entityEnabled) return;
         if (!tpsGuard.allowHeavyWork()) return;
 
+        long start = System.nanoTime();
+        try {
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!p.isOnline() || !config.isWorldEnabled(p.getWorld())
                     || p.hasPermission(config.bypassPermission)) continue;
@@ -104,6 +127,9 @@ public final class EntityVisibilityService {
                     timers.remove(e.getUniqueId());
                 }
             }
+        }
+        } finally {
+            timings.record(System.nanoTime() - start);
         }
     }
 }

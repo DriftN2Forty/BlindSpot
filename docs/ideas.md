@@ -1,21 +1,6 @@
-# Ideas & Future Enhancements
+# Ideas
 
-## LOS Passthrough Materials
+## Player staggering / round-robin scheduling
+Currently all three scheduled services (EntityVisibilityService, ItemFrameVisibilityService, BlockEntityVisibilityService) iterate every online player in a single tick with no batching or spreading. The only throttle is TpsGuard, which skips the entire tick when server TPS is low.
 
-Allow certain block types (fences, glass panes, iron bars, etc.) to not block line-of-sight checks.
-
-**Approach:** Keep the native `rayTraceBlocks()` for performance. When a ray hits a block whose material is in a configurable passthrough set, fire a second shorter raytrace from just past that block. Repeat up to a bounded depth. This avoids replacing the optimized NMS raytrace with a slower block-by-block walk — extra cost is only paid when a passthrough block is actually hit.
-
-**Config example:**
-```yaml
-losPassthrough:
-  - OAK_FENCE
-  - SPRUCE_FENCE
-  - IRON_BARS
-  - GLASS_PANE
-```
-
-**Notes:**
-- Applies to both block entity and entity LOS checks.
-- Entity checks currently use `Player.hasLineOfSight()` (vanilla NMS) which can't be customized — would need to be replaced with the same `rayTraceBlocks()` + passthrough approach.
-- Should cap the number of passthrough re-traces (e.g., max 5) to prevent runaway cost when looking through many consecutive passthrough blocks.
+A round-robin approach would split players into N buckets and rotate which bucket is processed each tick, spreading CPU cost across multiple ticks instead of spiking on one. This would smooth out per-tick load on busy servers with many players.

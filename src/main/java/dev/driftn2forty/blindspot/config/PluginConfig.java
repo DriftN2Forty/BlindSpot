@@ -68,7 +68,7 @@ public final class PluginConfig {
         this.beRemaskDelayMs = Math.max(0, cfg.getInt("blockEntities.remaskDelay", 10)) * 1000L;
         this.beMode = clampMode(cfg.getInt("blockEntities.mode", 2));
         this.beLosMaxRevealDistance = Math.max(8, cfg.getInt("blockEntities.losMaxRevealDistance", 120));
-        this.beBlockTraceMode = Math.max(1, Math.min(3, cfg.getInt("blockEntities.blockTraceMode", 2)));
+        this.beBlockTraceMode = Math.max(1, Math.min(4, cfg.getInt("blockEntities.blockTraceMode", 2)));
 
         this.bePlaceholders = new EnumMap<>(Material.class);
         ConfigurationSection ph = cfg.getConfigurationSection("blockEntities.placeholders");

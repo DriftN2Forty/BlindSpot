@@ -3,8 +3,9 @@
 ## 1.0.0
 
 ### Bug Fixes
-- Fixed block entity cache (`ChunkBECache`) never invalidating when blocks are placed or broken — newly placed chests/furnaces/etc. were invisible to `MovementRevealer` and never masked until a full plugin reload. Added `BlockChangeListener` to invalidate the cache for the affected chunk on `BlockPlaceEvent`/`BlockBreakEvent`.
-- Fixed `MovementRevealer` task leak — the scheduler task was never stopped on plugin disable or config reload, causing duplicate tasks to accumulate.
+- Fixed `/blindspot reload` causing all hidden entities and block entities to become visible — the reload path cleared mask state and called `stop()` (which explicitly un-hides everything), then restarted with a 2-second delay. Services now use a `restart()` method that preserves hidden/suppressed state across config reloads.
+- Fixed block entity cache (`ChunkBECache`) never invalidating when blocks are placed or broken — newly placed chests/furnaces/etc. were invisible to `BlockEntityVisibilityService` and never masked until a full plugin reload. Added `BlockChangeListener` to invalidate the cache for the affected chunk on `BlockPlaceEvent`/`BlockBreakEvent`.
+- Fixed `BlockEntityVisibilityService` task leak — the scheduler task was never stopped on plugin disable or config reload, causing duplicate tasks to accumulate.
 - Removed unused `Plugin` field from `TpsGuard`, `ChunkBECache`, and `ProximityService`.
 - Fixed O(N²) entity lookup in `EntityVisibilityService.stop()` — now builds a UUID map for O(1) lookups instead of linear-scanning all world entities per hidden entity.
 - Fixed code fallback defaults not matching shipped config (`revealRadius` was 14/28, now 12/12; passthrough defaults now `true`).
@@ -15,21 +16,22 @@
 - Deleted stale root `config.yml` — `src/main/resources/config.yml` is the single source of truth.
 
 ### Improvements
-- Added `blockTraceMode` for block entity LOS checks (modes 1–3) — raycasts can now target multiple face centers instead of only the block center. Default mode 2 (6 face centers) fixes blocks being hidden when partially exposed (e.g. a chest with a solid block on top but a visible front face). Mode 3 adds all 8 corners for maximum accuracy (14 raycasts).
-- Added packet-based item frame hiding (`ItemFrameService`) — `Player.hideEntity()` does not reliably hide item frames because the server re-sends them via chunk entity tracking. The new service uses `DESTROY_ENTITIES` / `SPAWN_ENTITY` packets directly, with a packet interceptor to prevent the server from re-showing suppressed frames.
+- Unified `blockTraceMode` and `entityTraceMode` to use the same 4-mode scheme: 1 = center, 2 = 6 face centers, 3 = 8 corners, 4 = 6 face centers + 8 corners (14 raycasts). Entity traces now properly sample all 6 faces and all 8 corners of the 3D bounding box instead of only 4 diagonal corners. `blockTraceMode` gains a new mode 3 (corners only, 8 raycasts) with the old mode 3 (faces + corners) moved to mode 4.
+- Added `blockTraceMode` for block entity LOS checks (modes 1–4) — raycasts can now target multiple face centers instead of only the block center. Default mode 2 (6 face centers) fixes blocks being hidden when partially exposed (e.g. a chest with a solid block on top but a visible front face).
+- Added packet-based item frame hiding (`ItemFrameVisibilityService`) — `Player.hideEntity()` does not reliably hide item frames because the server re-sends them via chunk entity tracking. The new service uses `DESTROY_ENTITIES` / `SPAWN_ENTITY` packets directly, with a packet interceptor to prevent the server from re-showing suppressed frames.
 - Added LOS passthrough materials — raycasts can now pass through configurable block types (glass, fences, iron bars, etc.) with bounded re-tracing. Enabled by default; enable independently for blocks and/or entities via `losPassthrough.enableBlocks` / `losPassthrough.enableEntities`.
 - Replaced entity LOS check from opaque `Player.hasLineOfSight()` to `World.rayTraceBlocks()` with configurable multi-point bounding-box traces (`entityTraceMode` 1–4).
 - Replaced `losMode`/`losStrict`/`losAssist` booleans with a single `mode` parameter (1 = Proximity, 2 = LOS, 3 = Proximity OR LOS), configured independently for block entities and entities.
 - Added `remaskDelay` parameter (default 10 s) for both block entities and entities — debounces re-masking so brief line-of-sight breaks don't flicker.
 - Added `remaskWhenLeaving` to entities (default `true`) matching the existing block-entity option.
 - Cached `EntityType` parsing in `PluginConfig` — eliminated per-tick string-to-enum conversion in `EntityVisibilityService`.
-- Extracted `isBlockVisible()` into `ProximityService` to replace three duplicated LOS/radius check patterns across `BlockEntityMasker` and `MovementRevealer`.
+- Extracted `isBlockVisible()` into `ProximityService` to replace three duplicated LOS/radius check patterns across `BlockEntityMasker` and `BlockEntityVisibilityService`.
 - Moved `sendBlockChange()` out of `PlayerMaskState`, making it a pure state tracker with no Bukkit dependencies.
 - Extracted `MapChunkPacketHandler` and `TileEntityDataPacketHandler` from `BlockEntityMasker`, reducing it to a thin registration shell.
 
 ### Architecture
 - Introduced `VisibilityChecker`, `MaskStateTracker`, `TpsThrottle`, and `BlockEntityCache` interfaces for all core services.
-- All downstream consumers (`BlockEntityMasker`, `MovementRevealer`, `EntityVisibilityService`) now depend on interfaces instead of concrete types.
+- All downstream consumers (`BlockEntityMasker`, `BlockEntityVisibilityService`, `EntityVisibilityService`) now depend on interfaces instead of concrete types.
 - Migrated packet library from ProtocolLib to [PacketEvents](https://github.com/retrooper/packetevents) 2.12.0. Packet handlers now extend `PacketListenerAbstract` and use typed wrappers (`WrapperPlayServerChunkData`, `WrapperPlayServerBlockEntityData`) instead of ProtocolLib's generic `StructureModifier`.
 
 ### Testing
