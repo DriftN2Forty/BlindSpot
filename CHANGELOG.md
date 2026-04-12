@@ -3,6 +3,8 @@
 ## 1.0.0
 
 ### Features
+- Added `scanBlocks` system for masking non-block-entity blocks (crafting tables, grindstones, anvils, looms, etc.) that can't be discovered via `Chunk.getTileEntities()`. Uses NMS reflection to access chunk section palettes for O(1) filtering — only sections whose palette contains a target material are fully scanned. Requires Paper 1.20.5+ with Mojang mappings; logs a warning and disables gracefully on unsupported servers.
+- Removed `COMPOSTER`, `CARTOGRAPHY_TABLE`, `SMITHING_TABLE`, and `STONECUTTER` from default `blockEntities.maskMaterials` — these are not actual block entities and were silently never masked. They are now in the new `scanBlocks.materials` list instead.
 - Added all leaf block types (oak, spruce, birch, jungle, acacia, dark oak, mangrove, cherry, pale oak, azalea, flowering azalea) to the default LOS passthrough materials list.
 - Added all boat and chest boat types (including bamboo rafts and pale oak) to the default `suppressTypes` entity list.
 - Added `requireCrouchToHide` for entities (default `false`) — when enabled, PLAYER entities are only hidden while crouching/sneaking. Non-crouching players remain visible regardless of LOS or proximity. Hiding is instant with no remask delay in this mode.

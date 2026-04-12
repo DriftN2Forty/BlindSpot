@@ -61,6 +61,21 @@ public final class PluginConfig {
     public int ptEntityTraceMode;
     public Set<Material> ptMaterials;
 
+    public boolean scanEnabled;
+    public int scanMode;
+    public int scanRevealRadius;
+    public boolean scanRemaskLeaving;
+    public long scanRemaskDelayMs;
+    public int scanLosMaxRevealDistance;
+    public int scanBlockTraceMode;
+    public int scanTraceModeFallbackDistance;
+    public double scanTraceModeFallbackDistanceSq;
+    public int scanHighPriorityRadius;
+    public double scanHighPriorityRadiusSq;
+    public int scanHighPriorityInterval;
+    public Map<Material, Material> scanPlaceholders;
+    public Set<Material> scanMaterials;
+
     public PluginConfig(Plugin plugin) {
         this.plugin = plugin;
         reload();
@@ -143,6 +158,42 @@ public final class PluginConfig {
                 this.ptMaterials.add(m);
             } else if (debugVerbose) {
                 plugin.getLogger().warning("[config] Unknown passthrough material: " + name);
+            }
+        }
+
+        // --- Scan Blocks (non-block-entity masking via NMS palette scan) ---
+        this.scanEnabled = cfg.getBoolean("scanBlocks.enabled", true);
+        this.scanMode = clampMode(cfg.getInt("scanBlocks.mode", 2));
+        this.scanRevealRadius = Math.max(2, cfg.getInt("scanBlocks.revealRadius", 12));
+        this.scanRemaskLeaving = cfg.getBoolean("scanBlocks.remaskWhenLeaving", true);
+        this.scanRemaskDelayMs = Math.max(0, cfg.getInt("scanBlocks.remaskDelay", 2)) * 1000L;
+        this.scanLosMaxRevealDistance = Math.max(8, cfg.getInt("scanBlocks.losMaxRevealDistance", 120));
+        this.scanBlockTraceMode = Math.max(1, Math.min(4, cfg.getInt("scanBlocks.blockTraceMode", 2)));
+        this.scanTraceModeFallbackDistance = Math.max(0, cfg.getInt("scanBlocks.traceModeFallbackDistance", 48));
+        this.scanTraceModeFallbackDistanceSq = (double) scanTraceModeFallbackDistance * scanTraceModeFallbackDistance;
+        this.scanHighPriorityRadius = Math.max(1, cfg.getInt("scanBlocks.tickPriority.highPriorityRadius", 16));
+        this.scanHighPriorityInterval = Math.min(8, Math.max(1, cfg.getInt("scanBlocks.tickPriority.highPriorityInterval", 2)));
+        this.scanHighPriorityRadiusSq = (double) scanHighPriorityRadius * scanHighPriorityRadius;
+
+        this.scanPlaceholders = new EnumMap<>(Material.class);
+        ConfigurationSection scanPh = cfg.getConfigurationSection("scanBlocks.placeholders");
+        if (scanPh != null) {
+            for (String k : scanPh.getKeys(false)) {
+                Material from = MoreMaterials.match(k);
+                Material to = MoreMaterials.match(scanPh.getString(k, "STONE"));
+                if (from != null && to != null && to.isBlock()) {
+                    this.scanPlaceholders.put(from, to);
+                }
+            }
+        }
+
+        this.scanMaterials = EnumSet.noneOf(Material.class);
+        for (String name : cfg.getStringList("scanBlocks.materials")) {
+            Material m = MoreMaterials.match(name);
+            if (m != null) {
+                this.scanMaterials.add(m);
+            } else if (debugVerbose) {
+                plugin.getLogger().warning("[config] Unknown scan material: " + name);
             }
         }
     }

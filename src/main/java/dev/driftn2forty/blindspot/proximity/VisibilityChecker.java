@@ -18,4 +18,6 @@ public interface VisibilityChecker {
     boolean hasLineOfSightToBlock(Player viewer, BlockVector blockPos);
 
     boolean hasLineOfSightToEntity(Player viewer, Entity e);
+
+    boolean isScanBlockVisible(Player viewer, BlockVector blockPos);
 }

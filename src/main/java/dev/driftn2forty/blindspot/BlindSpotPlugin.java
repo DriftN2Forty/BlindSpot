@@ -8,8 +8,11 @@ import dev.driftn2forty.blindspot.guard.TpsGuard;
 import dev.driftn2forty.blindspot.mask.BlockEntityMasker;
 import dev.driftn2forty.blindspot.mask.BlockChangeListener;
 import dev.driftn2forty.blindspot.mask.ChunkBECache;
+import dev.driftn2forty.blindspot.mask.ChunkBlockCache;
 import dev.driftn2forty.blindspot.mask.PlayerMaskState;
+import dev.driftn2forty.blindspot.nms.NmsChunkScanner;
 import dev.driftn2forty.blindspot.proximity.BlockEntityVisibilityService;
+import dev.driftn2forty.blindspot.proximity.BlockVisibilityService;
 import dev.driftn2forty.blindspot.proximity.ProximityService;
 import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bstats.bukkit.Metrics;
@@ -28,6 +31,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private ItemFrameVisibilityService itemFrameVisibilityService;
     private TpsGuard tpsGuard;
     private BlockEntityVisibilityService blockEntityVisibilityService;
+    private NmsChunkScanner nmsChunkScanner;
+    private ChunkBlockCache scanCache;
+    private BlockVisibilityService blockVisibilityService;
 
     @Override
     public void onEnable() {
@@ -74,8 +80,12 @@ public final class BlindSpotPlugin extends JavaPlugin {
                 this.proximityService, this.beCache, this.maskState, this.tpsGuard);
         this.blockEntityMasker.register();
 
+        // NMS scan-block system (non-block-entity masking)
+        this.nmsChunkScanner = new NmsChunkScanner(getLogger());
+        this.scanCache = new ChunkBlockCache(this.pluginConfig, this.nmsChunkScanner);
+
         Bukkit.getPluginManager().registerEvents(
-                new BlockChangeListener(this.pluginConfig, this.beCache), this);
+                new BlockChangeListener(this.pluginConfig, this.beCache, this.scanCache), this);
 
         this.entityVisibilityService = new EntityVisibilityService(this, this.pluginConfig,
                 this.proximityService, this.tpsGuard);
@@ -88,6 +98,12 @@ public final class BlindSpotPlugin extends JavaPlugin {
         this.blockEntityVisibilityService = new BlockEntityVisibilityService(this, this.pluginConfig, this.proximityService,
                 this.beCache, this.maskState, this.tpsGuard);
         this.blockEntityVisibilityService.start();
+
+        if (this.nmsChunkScanner.isAvailable() && this.pluginConfig.scanEnabled) {
+            this.blockVisibilityService = new BlockVisibilityService(this, this.pluginConfig,
+                    this.proximityService, this.scanCache, this.maskState, this.tpsGuard);
+            this.blockVisibilityService.start();
+        }
 
         ReloadCommand reloadCmd = new ReloadCommand(this);
         getCommand("blindspot").setExecutor(reloadCmd);
@@ -109,6 +125,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         if (this.blockEntityVisibilityService != null) {
             this.blockEntityVisibilityService.stop();
         }
+        if (this.blockVisibilityService != null) {
+            this.blockVisibilityService.stop();
+        }
         getLogger().info("BlindSpot disabled.");
     }
 
@@ -116,6 +135,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         reloadConfig();
         this.pluginConfig.reload();
         this.beCache.clear();
+        if (this.scanCache != null) {
+            this.scanCache.clear();
+        }
 
         if (this.blockEntityMasker != null) {
             this.blockEntityMasker.unregister();
@@ -129,6 +151,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         }
         if (this.blockEntityVisibilityService != null) {
             this.blockEntityVisibilityService.restart();
+        }
+        if (this.blockVisibilityService != null) {
+            this.blockVisibilityService.restart();
         }
         getLogger().info("BlindSpot config reloaded.");
     }
@@ -146,5 +171,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
     public TickTimings getBlockEntityTimings() {
         return blockEntityVisibilityService != null ? blockEntityVisibilityService.getTimings() : null;
+    }
+
+    public TickTimings getScanBlockTimings() {
+        return blockVisibilityService != null ? blockVisibilityService.getTimings() : null;
     }
 }

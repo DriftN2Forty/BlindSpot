@@ -12,10 +12,12 @@ public final class BlockChangeListener implements Listener {
 
     private final PluginConfig config;
     private final BlockEntityCache beCache;
+    private final BlockEntityCache scanCache;
 
-    public BlockChangeListener(PluginConfig config, BlockEntityCache beCache) {
+    public BlockChangeListener(PluginConfig config, BlockEntityCache beCache, BlockEntityCache scanCache) {
         this.config = config;
         this.beCache = beCache;
+        this.scanCache = scanCache;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -29,8 +31,12 @@ public final class BlockChangeListener implements Listener {
     }
 
     private void invalidateIfTracked(Block block) {
-        if (!config.enabled || !config.beEnabled) return;
-        if (!config.beMaskMaterials.contains(block.getType())) return;
-        beCache.invalidate(block.getChunk());
+        if (!config.enabled) return;
+        if (config.beEnabled && config.beMaskMaterials.contains(block.getType())) {
+            beCache.invalidate(block.getChunk());
+        }
+        if (config.scanEnabled && config.scanMaterials.contains(block.getType())) {
+            scanCache.invalidate(block.getChunk());
+        }
     }
 }

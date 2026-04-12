@@ -40,6 +40,14 @@ public final class ProximityService implements VisibilityChecker {
     }
 
     public boolean hasLineOfSightToBlock(Player viewer, BlockVector blockPos) {
+        return hasLosToBlock(viewer, blockPos, config.beLosMaxRevealDistance,
+                config.beBlockTraceMode, config.beTraceModeFallbackDistance,
+                config.beTraceModeFallbackDistanceSq);
+    }
+
+    private boolean hasLosToBlock(Player viewer, BlockVector blockPos,
+                                  int maxDist, int traceMode,
+                                  int fallbackDist, double fallbackDistSq) {
         if (viewer == null || blockPos == null) return false;
         if (!config.isWorldEnabled(viewer.getWorld())) return false;
 
@@ -50,9 +58,9 @@ public final class ProximityService implements VisibilityChecker {
         double distSqToCenter = eye.toVector().distanceSquared(
                 new Vector(blockPos.getBlockX() + 0.5, blockPos.getBlockY() + 0.5, blockPos.getBlockZ() + 0.5));
 
-        for (Vector point : blockTracePoints(blockPos, distSqToCenter)) {
+        for (Vector point : blockTracePoints(blockPos, distSqToCenter, traceMode, fallbackDist, fallbackDistSq)) {
             double dist = eye.toVector().distance(point);
-            if (dist > config.beLosMaxRevealDistance) continue;
+            if (dist > maxDist) continue;
             if (rayReaches(viewer.getWorld(), eye, point, dist, blockPos, maxRetrace)) {
                 return true;
             }
@@ -60,14 +68,14 @@ public final class ProximityService implements VisibilityChecker {
         return false;
     }
 
-    private Vector[] blockTracePoints(BlockVector bp, double distSqToCenter) {
+    private Vector[] blockTracePoints(BlockVector bp, double distSqToCenter,
+                                      int traceMode, int fallbackDist, double fallbackDistSq) {
         double bx = bp.getBlockX(), by = bp.getBlockY(), bz = bp.getBlockZ();
         double cx = bx + 0.5, cy = by + 0.5, cz = bz + 0.5;
         double inset = 0.05;
 
-        int mode = (config.beTraceModeFallbackDistance > 0
-                && distSqToCenter > config.beTraceModeFallbackDistanceSq)
-                ? 1 : config.beBlockTraceMode;
+        int mode = (fallbackDist > 0 && distSqToCenter > fallbackDistSq)
+                ? 1 : traceMode;
 
         switch (mode) {
             case 2:
@@ -276,6 +284,36 @@ public final class ProximityService implements VisibilityChecker {
             default:
                 return hasLineOfSightToBlock(viewer, blockPos);
         }
+    }
+
+    public boolean isScanBlockVisible(Player viewer, BlockVector blockPos) {
+        Location target = new Location(viewer.getWorld(),
+                blockPos.getBlockX(), blockPos.getBlockY(), blockPos.getBlockZ());
+        double scanRevealRadiusSq = (double) config.scanRevealRadius * config.scanRevealRadius;
+        switch (config.scanMode) {
+            case 1:
+                return withinReveal(viewer, target, scanRevealRadiusSq);
+            case 2:
+                return hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
+                        config.scanBlockTraceMode, config.scanTraceModeFallbackDistance,
+                        config.scanTraceModeFallbackDistanceSq);
+            case 3:
+                return withinReveal(viewer, target, scanRevealRadiusSq)
+                        || hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
+                                config.scanBlockTraceMode, config.scanTraceModeFallbackDistance,
+                                config.scanTraceModeFallbackDistanceSq);
+            default:
+                return hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
+                        config.scanBlockTraceMode, config.scanTraceModeFallbackDistance,
+                        config.scanTraceModeFallbackDistanceSq);
+        }
+    }
+
+    private boolean withinReveal(Player viewer, Location target, double radiusSq) {
+        if (viewer == null || target == null) return false;
+        if (!config.isWorldEnabled(target.getWorld())) return false;
+        if (!viewer.getWorld().equals(target.getWorld())) return false;
+        return viewer.getLocation().distanceSquared(target) <= radiusSq;
     }
 
     public boolean isEntityVisible(Player viewer, Entity e) {

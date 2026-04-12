@@ -54,10 +54,6 @@ blockEntities:
     SOUL_CAMPFIRE: STONE
     BEE_NEST: STONE
     BEEHIVE: STONE
-    COMPOSTER: STONE
-    CARTOGRAPHY_TABLE: STONE
-    SMITHING_TABLE: STONE
-    STONECUTTER: STONE
     ENCHANTING_TABLE: STONE
     BELL: STONE
   maskMaterials:
@@ -77,10 +73,6 @@ blockEntities:
     - SOUL_CAMPFIRE
     - BEE_NEST
     - BEEHIVE
-    - COMPOSTER
-    - CARTOGRAPHY_TABLE
-    - SMITHING_TABLE
-    - STONECUTTER
     - ENCHANTING_TABLE
     - BELL
 
@@ -276,6 +268,51 @@ losPassthrough:
     - PALE_OAK_LEAVES
     - AZALEA_LEAVES
     - FLOWERING_AZALEA_LEAVES
+
+# Scan Blocks — masks non-block-entity blocks (crafting tables, grindstones, etc.)
+# that can't be discovered via Chunk.getTileEntities().
+# Uses NMS palette scanning to efficiently locate these blocks in chunks.
+# The palette check is O(1) per chunk section (16×16×16); only sections whose
+# palette contains a target material are fully scanned.
+#
+# Requires Paper 1.20.5+ with Mojang mappings. If NMS reflection fails at
+# startup a warning is logged and this feature is silently disabled.
+scanBlocks:
+  enabled: true
+  mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
+  revealRadius: 12           # used by modes 1 and 3
+  remaskWhenLeaving: true    # re-mask blocks when leaving reveal radius or LOS
+  remaskDelay: 2             # seconds to wait before re-masking (debounce)
+  losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
+  blockTraceMode: 2          # 1 = center, 2 = 6 face centers, 3 = 8 corners, 4 = faces + corners
+  traceModeFallbackDistance: 48
+
+  tickPriority:
+    highPriorityRadius: 16     # blocks
+    highPriorityInterval: 2    # ticks
+
+  placeholders:
+    CRAFTING_TABLE: STONE
+    CARTOGRAPHY_TABLE: STONE
+    SMITHING_TABLE: STONE
+    STONECUTTER: STONE
+    GRINDSTONE: STONE
+    LOOM: STONE
+    ANVIL: IRON_BLOCK
+    CHIPPED_ANVIL: IRON_BLOCK
+    DAMAGED_ANVIL: IRON_BLOCK
+    COMPOSTER: STONE
+  materials:
+    - CRAFTING_TABLE
+    - CARTOGRAPHY_TABLE
+    - SMITHING_TABLE
+    - STONECUTTER
+    - GRINDSTONE
+    - LOOM
+    - ANVIL
+    - CHIPPED_ANVIL
+    - DAMAGED_ANVIL
+    - COMPOSTER
 
 tpsGuard:
   enabled: true
