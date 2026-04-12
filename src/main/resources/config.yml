@@ -292,8 +292,10 @@ scanBlocks:
     highPriorityInterval: 2    # ticks
 
   placeholders:
+    BOOKSHELF: STONE
     CRAFTING_TABLE: STONE
     CARTOGRAPHY_TABLE: STONE
+    COMPOSTER: STONE
     SMITHING_TABLE: STONE
     STONECUTTER: STONE
     GRINDSTONE: STONE
@@ -302,9 +304,13 @@ scanBlocks:
     CHIPPED_ANVIL: STONE
     DAMAGED_ANVIL: STONE
     COMPOSTER: STONE
+    TRIPWIRE_HOOK: STONE
+    NETHER_PORTAL: STONE
   materials:
+    - BOOKSHELF
     - CRAFTING_TABLE
     - CARTOGRAPHY_TABLE
+    - COMPOSTER
     - SMITHING_TABLE
     - STONECUTTER
     - GRINDSTONE
@@ -312,7 +318,8 @@ scanBlocks:
     - ANVIL
     - CHIPPED_ANVIL
     - DAMAGED_ANVIL
-    - COMPOSTER
+    - TRIPWIRE_HOOK
+    - NETHER_PORTAL
 
 tpsGuard:
   enabled: true

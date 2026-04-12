@@ -109,8 +109,7 @@ public final class BlockVisibilityService {
                                 Map<BlockVector, Long> t = remaskTimers.get(p.getUniqueId());
                                 if (t != null) t.remove(bp);
                                 if (!maskState.isMaskedFor(p.getUniqueId(), bp)) continue;
-                                Material real = blockLoc.getBlock().getType();
-                                p.sendBlockChange(blockLoc, Bukkit.createBlockData(real));
+                                p.sendBlockChange(blockLoc, blockLoc.getBlock().getBlockData());
                                 maskState.setMasked(p.getUniqueId(), bp, false);
                             } else {
                                 Material real = blockLoc.getBlock().getType();
