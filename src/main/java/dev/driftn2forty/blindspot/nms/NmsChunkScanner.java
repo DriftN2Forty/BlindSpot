@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  *
  * <h2>Targeted NMS classes (Paper 1.20.5+ / Mojang mappings)</h2>
  * <ul>
- *   <li>{@code org.bukkit.craftbukkit.CraftChunk}           — {@code getHandle(ChunkStatus)}</li>
+ *   <li>{@code org.bukkit.craftbukkit.CraftChunk}           — {@code getHandle()} or {@code getHandle(ChunkStatus)}</li>
  *   <li>{@code net.minecraft.world.level.chunk.LevelChunk}  — inherited {@code getSections()}</li>
  *   <li>{@code net.minecraft.world.level.chunk.LevelChunkSection}
  *       — {@code hasOnlyAir()}, field {@code states} (PalettedContainer)</li>
@@ -176,11 +176,24 @@ public final class NmsChunkScanner {
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-            // --- CraftChunk.getHandle() -> LevelChunk ---
-            // Paper 1.20.5+ exposes a no-arg getHandle() on CraftChunk
+            // --- CraftChunk.getHandle(...) -> ChunkAccess/LevelChunk ---
+            // Older Paper: no-arg getHandle() returning LevelChunk
+            // Paper 1.21+:  getHandle(ChunkStatus) returning ChunkAccess
             Class<?> craftChunkClass = Class.forName("org.bukkit.craftbukkit.CraftChunk");
-            Method getHandleMethod = craftChunkClass.getMethod("getHandle");
-            this.craftChunkGetHandle = lookup.unreflect(getHandleMethod);
+            Method getHandleMethod;
+            try {
+                getHandleMethod = craftChunkClass.getMethod("getHandle");
+                this.craftChunkGetHandle = lookup.unreflect(getHandleMethod);
+            } catch (NoSuchMethodException ignored) {
+                // Paper 1.21+ removed no-arg getHandle; find getHandle(ChunkStatus)
+                Class<?> chunkStatusClass = findChunkStatusClass();
+                Object chunkStatusFull = chunkStatusClass.getField("FULL").get(null);
+                getHandleMethod = craftChunkClass.getMethod("getHandle", chunkStatusClass);
+                // Bind ChunkStatus.FULL as the constant second argument so the
+                // handle can be invoked with just the CraftChunk instance.
+                this.craftChunkGetHandle = MethodHandles.insertArguments(
+                        lookup.unreflect(getHandleMethod), 1, chunkStatusFull);
+            }
 
             Class<?> nmsChunkClass = getHandleMethod.getReturnType();
 
@@ -243,5 +256,21 @@ public final class NmsChunkScanner {
             }
         }
         throw new NoSuchFieldException(name + " in " + clazz.getName() + " (including supers)");
+    }
+
+    /**
+     * Locates the NMS {@code ChunkStatus} class. The package moved between
+     * Minecraft versions:
+     * <ul>
+     *   <li>1.20.5–1.20.6: {@code net.minecraft.world.level.chunk.ChunkStatus}</li>
+     *   <li>1.21+: {@code net.minecraft.world.level.chunk.status.ChunkStatus}</li>
+     * </ul>
+     */
+    private static Class<?> findChunkStatusClass() throws ClassNotFoundException {
+        try {
+            return Class.forName("net.minecraft.world.level.chunk.status.ChunkStatus");
+        } catch (ClassNotFoundException ignored) {
+            return Class.forName("net.minecraft.world.level.chunk.ChunkStatus");
+        }
     }
 }
