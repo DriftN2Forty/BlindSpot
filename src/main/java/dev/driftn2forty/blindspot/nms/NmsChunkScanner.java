@@ -223,9 +223,10 @@ public final class NmsChunkScanner {
             this.getMinSectionY = lookup.unreflect(nmsChunkClass.getMethod("getMinSectionY"));
 
             // --- BlockState.getBukkitMaterial() -> Material ---
-            // This is a Paper addition on NMS BlockState
-            Class<?> nmsBlockStateClass = paletteClass.getMethod("get", int.class, int.class, int.class)
-                    .getReturnType();
+            // PalettedContainer<T>.get() erases to Object at runtime, so we
+            // resolve the NMS BlockState class by name instead.
+            Class<?> nmsBlockStateClass = Class.forName(
+                    "net.minecraft.world.level.block.state.BlockState");
             this.getBukkitMaterial = lookup.unreflect(
                     nmsBlockStateClass.getMethod("getBukkitMaterial"));
 
