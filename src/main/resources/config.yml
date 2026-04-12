@@ -138,6 +138,26 @@ entities:
     - AXOLOTL
     - SNIFFER
     - ARMADILLO
+    - OAK_BOAT
+    - SPRUCE_BOAT
+    - BIRCH_BOAT
+    - JUNGLE_BOAT
+    - ACACIA_BOAT
+    - DARK_OAK_BOAT
+    - MANGROVE_BOAT
+    - CHERRY_BOAT
+    - PALE_OAK_BOAT
+    - BAMBOO_RAFT
+    - OAK_CHEST_BOAT
+    - SPRUCE_CHEST_BOAT
+    - BIRCH_CHEST_BOAT
+    - JUNGLE_CHEST_BOAT
+    - ACACIA_CHEST_BOAT
+    - DARK_OAK_CHEST_BOAT
+    - MANGROVE_CHEST_BOAT
+    - CHERRY_CHEST_BOAT
+    - PALE_OAK_CHEST_BOAT
+    - BAMBOO_CHEST_RAFT
 
 # LOS Passthrough — allows raycasts to pass through certain block types.
 # When a ray hits a passthrough material, it continues through instead of stopping.
