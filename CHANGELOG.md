@@ -3,6 +3,7 @@
 ## 1.0.0
 
 ### Features
+- Added all leaf block types (oak, spruce, birch, jungle, acacia, dark oak, mangrove, cherry, pale oak, azalea, flowering azalea) to the default LOS passthrough materials list.
 - Added all boat and chest boat types (including bamboo rafts and pale oak) to the default `suppressTypes` entity list.
 - Added `requireCrouchToHide` for entities (default `false`) — when enabled, PLAYER entities are only hidden while crouching/sneaking. Non-crouching players remain visible regardless of LOS or proximity. Hiding is instant with no remask delay in this mode.
 - Added `traceModeFallbackDistance` for block entities and entities (default 48 blocks) — beyond this distance the trace mode is forced to 1 (center only), reducing raycast count for distant targets. Set to 0 to disable.

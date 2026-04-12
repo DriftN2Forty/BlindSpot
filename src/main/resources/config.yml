@@ -265,6 +265,17 @@ losPassthrough:
     - GREEN_CANDLE
     - RED_CANDLE
     - BLACK_CANDLE
+    - OAK_LEAVES
+    - SPRUCE_LEAVES
+    - BIRCH_LEAVES
+    - JUNGLE_LEAVES
+    - ACACIA_LEAVES
+    - DARK_OAK_LEAVES
+    - MANGROVE_LEAVES
+    - CHERRY_LEAVES
+    - PALE_OAK_LEAVES
+    - AZALEA_LEAVES
+    - FLOWERING_AZALEA_LEAVES
 
 tpsGuard:
   enabled: true
