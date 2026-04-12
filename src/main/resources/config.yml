@@ -17,13 +17,18 @@ blockEntities:
   mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
   revealRadius: 12           # used by modes 1 and 3
   remaskWhenLeaving: true    # re-mask block entities when leaving reveal radius or LOS
-  remaskDelay: 10            # seconds to wait before re-masking (debounce)
+  remaskDelay: 2             # seconds to wait before re-masking (debounce)
   losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
 
   # blockTraceMode controls how many points on the block are checked for LOS.
   # More points = more accurate when a block is partially exposed, but more raycasts.
   # 1 = center only, 2 = 6 face centers, 3 = 8 corners, 4 = 6 face centers + 8 corners
   blockTraceMode: 2
+
+  # traceModeFallbackDistance — beyond this distance (in blocks) from the player,
+  # blockTraceMode is forced to 1 (center only) to save CPU on distant checks.
+  # Set to 0 to disable the fallback (always use the configured blockTraceMode).
+  traceModeFallbackDistance: 48
 
   # tickPriority — entities within highPriorityRadius recheck at a faster tick rate.
   # Everything else keeps the normal 8-tick interval.
@@ -84,7 +89,7 @@ entities:
   mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
   revealRadius: 12           # used by modes 1 and 3
   remaskWhenLeaving: true    # re-hide entities when leaving reveal radius or LOS
-  remaskDelay: 10            # seconds to wait before re-hiding (debounce)
+  remaskDelay: 2             # seconds to wait before re-hiding (debounce)
   losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
   
   # entityTraceMode controls how many points on the entity bounding box are checked.
@@ -92,12 +97,17 @@ entities:
   # 1 = center only, 2 = 6 face centers, 3 = 8 corners, 4 = 6 face centers + 8 corners
   entityTraceMode: 2
 
+  # traceModeFallbackDistance — beyond this distance (in blocks) from the player,
+  # entityTraceMode is forced to 1 (center only) to save CPU on distant checks.
+  # Set to 0 to disable the fallback (always use the configured entityTraceMode).
+  traceModeFallbackDistance: 48
+
   # tickPriority — entities within highPriorityRadius recheck at a faster tick rate.
   # Everything else keeps the normal 10-tick interval.
   # highPriorityInterval must be <= 10 (clamped automatically if higher).
   tickPriority:
     highPriorityRadius: 16     # blocks
-    highPriorityInterval: 2    # ticks
+    highPriorityInterval: 1    # ticks
 
   suppressTypes:
     - PLAYER

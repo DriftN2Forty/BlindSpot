@@ -47,7 +47,10 @@ public final class ProximityService implements VisibilityChecker {
         boolean passthrough = config.ptBlocksEnabled && !config.ptMaterials.isEmpty();
         int maxRetrace = passthrough ? config.ptMaxRetrace : 0;
 
-        for (Vector point : blockTracePoints(blockPos)) {
+        double distSqToCenter = eye.toVector().distanceSquared(
+                new Vector(blockPos.getBlockX() + 0.5, blockPos.getBlockY() + 0.5, blockPos.getBlockZ() + 0.5));
+
+        for (Vector point : blockTracePoints(blockPos, distSqToCenter)) {
             double dist = eye.toVector().distance(point);
             if (dist > config.beLosMaxRevealDistance) continue;
             if (rayReaches(viewer.getWorld(), eye, point, dist, blockPos, maxRetrace)) {
@@ -57,12 +60,16 @@ public final class ProximityService implements VisibilityChecker {
         return false;
     }
 
-    private Vector[] blockTracePoints(BlockVector bp) {
+    private Vector[] blockTracePoints(BlockVector bp, double distSqToCenter) {
         double bx = bp.getBlockX(), by = bp.getBlockY(), bz = bp.getBlockZ();
         double cx = bx + 0.5, cy = by + 0.5, cz = bz + 0.5;
         double inset = 0.05;
 
-        switch (config.beBlockTraceMode) {
+        int mode = (config.beTraceModeFallbackDistance > 0
+                && distSqToCenter > config.beTraceModeFallbackDistanceSq)
+                ? 1 : config.beBlockTraceMode;
+
+        switch (mode) {
             case 2:
                 return new Vector[] {
                     new Vector(cx, by + 1 - inset, cz), // top
@@ -119,7 +126,7 @@ public final class ProximityService implements VisibilityChecker {
         boolean passthrough = config.ptEntitiesEnabled && !config.ptMaterials.isEmpty();
         int maxRetrace = passthrough ? config.ptMaxRetrace : 0;
 
-        for (Vector point : entityTracePoints(e)) {
+        for (Vector point : entityTracePoints(e, dist * dist)) {
             if (rayReaches(viewer.getWorld(), eye, point, eye.toVector().distance(point),
                     null, maxRetrace)) {
                 return true;
@@ -128,7 +135,7 @@ public final class ProximityService implements VisibilityChecker {
         return false;
     }
 
-    private Vector[] entityTracePoints(Entity e) {
+    private Vector[] entityTracePoints(Entity e, double distSq) {
         BoundingBox bb = e.getBoundingBox();
         double cx = bb.getCenterX(), cy = bb.getCenterY(), cz = bb.getCenterZ();
         double minX = bb.getMinX(), maxX = bb.getMaxX();
@@ -136,7 +143,11 @@ public final class ProximityService implements VisibilityChecker {
         double minZ = bb.getMinZ(), maxZ = bb.getMaxZ();
         double inset = 0.1;
 
-        switch (config.ptEntityTraceMode) {
+        int mode = (config.entityTraceModeFallbackDistance > 0
+                && distSq > config.entityTraceModeFallbackDistanceSq)
+                ? 1 : config.ptEntityTraceMode;
+
+        switch (mode) {
             case 2:
                 return new Vector[] {
                     new Vector(cx, maxY - inset, cz),  // top

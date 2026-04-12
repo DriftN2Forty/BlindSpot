@@ -3,6 +3,7 @@
 ## 1.0.0
 
 ### Features
+- Added `traceModeFallbackDistance` for block entities and entities (default 48 blocks) — beyond this distance the trace mode is forced to 1 (center only), reducing raycast count for distant targets. Set to 0 to disable.
 - Added proximity-based tick priority — entities and block entities within a configurable `highPriorityRadius` (default 24 blocks) are now rechecked at a faster tick rate (`highPriorityInterval`), while distant targets keep the normal rate. Configured separately for block entities (default 4 ticks, base 8) and entities/item frames (default 5 ticks, base 10). The fast interval is clamped so it can never exceed the normal rate.
 
 ### Bug Fixes

@@ -76,9 +76,10 @@ Total:    min 0.147ms | max 29.138ms | avg 0.889ms
 A full server tick budget is 50ms (20 TPS). If the **avg** total is consistently above 2–3ms, or **max** spikes are frequent, consider:
 
 1. Lowering `blockTraceMode` or `entityTraceMode` (fewer raycasts per target)
-2. Reducing `losMaxRevealDistance` (shorter raycast reach)
-3. Reducing `losPassthrough.maxRetrace` or disabling passthrough entirely
-4. Switching from LOS (mode 2) to proximity-only (mode 1) for one category
+2. Lowering `traceModeFallbackDistance` (force center-only traces sooner for distant targets)
+3. Reducing `losMaxRevealDistance` (shorter raycast reach)
+4. Reducing `losPassthrough.maxRetrace` or disabling passthrough entirely
+5. Switching from LOS (mode 2) to proximity-only (mode 1) for one category
 
 Run `/blindspot timings` after each change to compare the impact.
 

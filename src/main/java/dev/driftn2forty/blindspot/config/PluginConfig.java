@@ -26,6 +26,8 @@ public final class PluginConfig {
     public int beMode;
     public int beLosMaxRevealDistance;
     public int beBlockTraceMode;
+    public int beTraceModeFallbackDistance;
+    public double beTraceModeFallbackDistanceSq;
     public Map<Material, Material> bePlaceholders;
     public Set<Material> beMaskMaterials;
 
@@ -36,6 +38,8 @@ public final class PluginConfig {
     public long entityRemaskDelayMs;
     public int entityLosMaxRevealDistance;
     public Set<EntityType> entitySuppressTypes;
+    public int entityTraceModeFallbackDistance;
+    public double entityTraceModeFallbackDistanceSq;
 
     public int beHighPriorityRadius;
     public double beHighPriorityRadiusSq;
@@ -77,6 +81,8 @@ public final class PluginConfig {
         this.beMode = clampMode(cfg.getInt("blockEntities.mode", 2));
         this.beLosMaxRevealDistance = Math.max(8, cfg.getInt("blockEntities.losMaxRevealDistance", 120));
         this.beBlockTraceMode = Math.max(1, Math.min(4, cfg.getInt("blockEntities.blockTraceMode", 2)));
+        this.beTraceModeFallbackDistance = Math.max(0, cfg.getInt("blockEntities.traceModeFallbackDistance", 48));
+        this.beTraceModeFallbackDistanceSq = (double) beTraceModeFallbackDistance * beTraceModeFallbackDistance;
         this.beHighPriorityRadius = Math.max(1, cfg.getInt("blockEntities.tickPriority.highPriorityRadius", 24));
         this.beHighPriorityInterval = Math.min(8, Math.max(1, cfg.getInt("blockEntities.tickPriority.highPriorityInterval", 4)));
         this.beHighPriorityRadiusSq = (double) beHighPriorityRadius * beHighPriorityRadius;
@@ -114,6 +120,8 @@ public final class PluginConfig {
             try { parsedTypes.add(EntityType.valueOf(s)); } catch (IllegalArgumentException ignored) {}
         }
         this.entitySuppressTypes = Collections.unmodifiableSet(parsedTypes);
+        this.entityTraceModeFallbackDistance = Math.max(0, cfg.getInt("entities.traceModeFallbackDistance", 48));
+        this.entityTraceModeFallbackDistanceSq = (double) entityTraceModeFallbackDistance * entityTraceModeFallbackDistance;
         this.entityHighPriorityRadius = Math.max(1, cfg.getInt("entities.tickPriority.highPriorityRadius", 24));
         this.entityHighPriorityInterval = Math.min(10, Math.max(1, cfg.getInt("entities.tickPriority.highPriorityInterval", 5)));
         this.entityHighPriorityRadiusSq = (double) entityHighPriorityRadius * entityHighPriorityRadius;
