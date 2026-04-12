@@ -4,21 +4,15 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.guard.TpsThrottle;
 import dev.driftn2forty.blindspot.proximity.VisibilityChecker;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
@@ -33,10 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Packet-based visibility service for item frames and glow item frames.
  * <p>
  * {@code Player.hideEntity()} does not reliably hide item frames because the
- * server re-sends them via chunk entity tracking.  This service uses raw
- * packets instead: DESTROY_ENTITIES to hide and SPAWN_ENTITY + metadata to
- * show.  A packet interceptor prevents the server from re-sending suppressed
- * frames between ticks.
+ * server re-sends them via chunk entity tracking.  This service sends
+ * DESTROY_ENTITIES packets to hide frames and uses a Bukkit
+ * {@code hideEntity}/{@code showEntity} cycle to force a proper server-side
+ * tracker resync when re-showing.  A packet interceptor prevents the server
+ * from re-sending suppressed frames between ticks.
  */
 public final class ItemFrameService {
 
@@ -101,7 +96,7 @@ public final class ItemFrameService {
             for (Entity e : p.getWorld().getEntities()) {
                 if (!FRAME_TYPES.contains(e.getType())) continue;
                 if (ids.remove(e.getEntityId())) {
-                    sendSpawnPackets(p, (ItemFrame) e);
+                    showFrame(p, (ItemFrame) e);
                     if (ids.isEmpty()) break;
                 }
             }
@@ -140,7 +135,7 @@ public final class ItemFrameService {
                 if (visible) {
                     timers.remove(e.getEntityId());
                     if (suppressed.remove(e.getEntityId()) != null) {
-                        sendSpawnPackets(p, (ItemFrame) e);
+                        showFrame(p, (ItemFrame) e);
                     }
                 } else {
                     if (suppressed.containsKey(e.getEntityId())) continue;
@@ -166,59 +161,23 @@ public final class ItemFrameService {
                 new WrapperPlayServerDestroyEntities(entityId));
     }
 
-    private void sendSpawnPackets(Player p, ItemFrame frame) {
-        org.bukkit.Location loc = frame.getLocation();
-        com.github.retrooper.packetevents.protocol.entity.type.EntityType peType =
-                frame.getType() == EntityType.GLOW_ITEM_FRAME
-                        ? EntityTypes.GLOW_ITEM_FRAME : EntityTypes.ITEM_FRAME;
-
-        WrapperPlayServerSpawnEntity spawn = new WrapperPlayServerSpawnEntity(
-                frame.getEntityId(),
-                Optional.of(frame.getUniqueId()),
-                peType,
-                new Vector3d(loc.getX(), loc.getY(), loc.getZ()),
-                loc.getPitch(),
-                loc.getYaw(),
-                loc.getYaw(),
-                facingToData(frame.getFacing()),
-                Optional.of(new Vector3d(0, 0, 0))
-        );
-        PacketEvents.getAPI().getPlayerManager().sendPacket(p, spawn);
-
-        // item + rotation metadata (indices 8 & 9 for 1.21.x)
-        List<EntityData<?>> metadata = new ArrayList<>(2);
-        org.bukkit.inventory.ItemStack item = frame.getItem();
-        if (item != null && item.getType() != Material.AIR) {
-            metadata.add(new EntityData<>(8, EntityDataTypes.ITEMSTACK,
-                    SpigotConversionUtil.fromBukkitItemStack(item)));
-        }
-        metadata.add(new EntityData<>(9, EntityDataTypes.INT,
-                frame.getRotation().ordinal()));
-
-        if (!metadata.isEmpty()) {
-            PacketEvents.getAPI().getPlayerManager().sendPacket(p,
-                    new WrapperPlayServerEntityMetadata(frame.getEntityId(), metadata));
-        }
-    }
-
-    private static int facingToData(BlockFace face) {
-        switch (face) {
-            case DOWN:  return 0;
-            case UP:    return 1;
-            case NORTH: return 2;
-            case SOUTH: return 3;
-            case WEST:  return 4;
-            case EAST:  return 5;
-            default:    return 3;
-        }
+    /**
+     * Re-shows a previously suppressed frame by forcing the server's entity
+     * tracker to resync.  A hide+show cycle on the Bukkit API makes the
+     * server produce correct SPAWN_ENTITY + ENTITY_METADATA packets with
+     * proper version-aware types, avoiding hardcoded metadata indices.
+     */
+    private void showFrame(Player p, ItemFrame frame) {
+        p.hideEntity(plugin, frame);
+        p.showEntity(plugin, frame);
     }
 
     // ── packet interceptor ─────────────────────────────────────────
 
     /**
-     * Cancels server-initiated SPAWN_ENTITY packets for item frames that
-     * are currently suppressed.  Prevents the server's entity tracker from
-     * re-showing frames we've hidden between ticks.
+     * Cancels server-initiated SPAWN_ENTITY and ENTITY_METADATA packets for
+     * item frames that are currently suppressed.  Prevents the server's
+     * entity tracker from re-showing or updating frames we've hidden.
      */
     private class FrameSpawnInterceptor extends PacketListenerAbstract {
 
@@ -228,8 +187,14 @@ public final class ItemFrameService {
 
         @Override
         public void onPacketSend(PacketSendEvent event) {
-            if (event.getPacketType() != PacketType.Play.Server.SPAWN_ENTITY) return;
+            if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
+                handleSpawn(event);
+            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_METADATA) {
+                handleMetadata(event);
+            }
+        }
 
+        private void handleSpawn(PacketSendEvent event) {
             WrapperPlayServerSpawnEntity wrapper = new WrapperPlayServerSpawnEntity(event);
             com.github.retrooper.packetevents.protocol.entity.type.EntityType type =
                     wrapper.getEntityType();
@@ -243,6 +208,20 @@ public final class ItemFrameService {
 
             UUID storedUuid = suppressed.get(wrapper.getEntityId());
             if (storedUuid != null && storedUuid.equals(wrapper.getUUID().orElse(null))) {
+                event.setCancelled(true);
+            }
+        }
+
+        private void handleMetadata(PacketSendEvent event) {
+            Player player = (Player) event.getPlayer();
+            if (player == null) return;
+
+            Map<Integer, UUID> suppressed = suppressedFrames.get(player.getUniqueId());
+            if (suppressed == null) return;
+
+            WrapperPlayServerEntityMetadata wrapper =
+                    new WrapperPlayServerEntityMetadata(event);
+            if (suppressed.containsKey(wrapper.getEntityId())) {
                 event.setCancelled(true);
             }
         }
