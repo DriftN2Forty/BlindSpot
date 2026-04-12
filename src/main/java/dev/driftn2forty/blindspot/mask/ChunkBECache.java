@@ -25,6 +25,11 @@ public final class ChunkBECache implements BlockEntityCache {
         cache.clear();
     }
 
+    @Override
+    public void invalidate(Chunk chunk) {
+        cache.remove(key(chunk));
+    }
+
     private String key(Chunk c) {
         return c.getWorld().getName() + ":" + c.getX() + ":" + c.getZ();
     }

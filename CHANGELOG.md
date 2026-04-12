@@ -3,6 +3,7 @@
 ## 1.0.0
 
 ### Bug Fixes
+- Fixed block entity cache (`ChunkBECache`) never invalidating when blocks are placed or broken — newly placed chests/furnaces/etc. were invisible to `MovementRevealer` and never masked until a full plugin reload. Added `BlockChangeListener` to invalidate the cache for the affected chunk on `BlockPlaceEvent`/`BlockBreakEvent`.
 - Fixed `MovementRevealer` task leak — the scheduler task was never stopped on plugin disable or config reload, causing duplicate tasks to accumulate.
 - Removed unused `Plugin` field from `TpsGuard`, `ChunkBECache`, and `ProximityService`.
 - Fixed O(N²) entity lookup in `EntityVisibilityService.stop()` — now builds a UUID map for O(1) lookups instead of linear-scanning all world entities per hidden entity.

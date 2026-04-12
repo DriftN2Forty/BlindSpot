@@ -6,6 +6,7 @@ import dev.driftn2forty.blindspot.entity.EntityVisibilityService;
 import dev.driftn2forty.blindspot.entity.ItemFrameService;
 import dev.driftn2forty.blindspot.guard.TpsGuard;
 import dev.driftn2forty.blindspot.mask.BlockEntityMasker;
+import dev.driftn2forty.blindspot.mask.BlockChangeListener;
 import dev.driftn2forty.blindspot.mask.ChunkBECache;
 import dev.driftn2forty.blindspot.mask.PlayerMaskState;
 import dev.driftn2forty.blindspot.proximity.MovementRevealer;
@@ -69,6 +70,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         this.blockEntityMasker = new BlockEntityMasker(this, this.pluginConfig,
                 this.proximityService, this.beCache, this.maskState, this.tpsGuard);
         this.blockEntityMasker.register();
+
+        Bukkit.getPluginManager().registerEvents(
+                new BlockChangeListener(this.pluginConfig, this.beCache), this);
 
         this.entityVisibilityService = new EntityVisibilityService(this, this.pluginConfig,
                 this.proximityService, this.tpsGuard);

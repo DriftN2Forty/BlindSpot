@@ -85,22 +85,8 @@ public final class ItemFrameService {
             packetListener = null;
         }
 
-        // re-show every suppressed frame on disable
-        for (Map.Entry<UUID, Map<Integer, UUID>> entry : suppressedFrames.entrySet()) {
-            Player p = Bukkit.getPlayer(entry.getKey());
-            if (p == null || !p.isOnline()) continue;
-
-            Set<Integer> ids = new HashSet<>(entry.getValue().keySet());
-            if (ids.isEmpty()) continue;
-
-            for (Entity e : p.getWorld().getEntities()) {
-                if (!FRAME_TYPES.contains(e.getType())) continue;
-                if (ids.remove(e.getEntityId())) {
-                    showFrame(p, (ItemFrame) e);
-                    if (ids.isEmpty()) break;
-                }
-            }
-        }
+        // No manual re-show needed: unregistering the interceptor above lets
+        // the server's entity tracker resend frames naturally on its next tick.
         suppressedFrames.clear();
         remaskTimers.clear();
     }

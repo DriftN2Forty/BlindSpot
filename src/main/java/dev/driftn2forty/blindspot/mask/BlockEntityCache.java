@@ -9,5 +9,7 @@ public interface BlockEntityCache {
 
     List<BlockVector> getBlockEntityPositions(Chunk chunk);
 
+    void invalidate(Chunk chunk);
+
     void clear();
 }
