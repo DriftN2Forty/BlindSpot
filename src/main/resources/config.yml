@@ -86,6 +86,7 @@ entities:
   entityTraceMode: 2
   
   suppressTypes:
+    - PLAYER
     - VILLAGER
     - IRON_GOLEM
     - ARMOR_STAND
