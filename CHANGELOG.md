@@ -3,6 +3,7 @@
 ## 1.0.0
 
 ### Bug Fixes
+- Fixed LOS passthrough not working for fence gates, glass, and other passthrough blocks — the ray only advanced 0.05 units past the hit surface, which was still inside the block, causing the same block to be hit repeatedly until retries were exhausted. The ray now calculates the exit face of the full 1×1×1 block AABB and resumes from just past it.
 - Fixed `/blindspot reload` causing all hidden entities and block entities to become visible — the reload path cleared mask state and called `stop()` (which explicitly un-hides everything), then restarted with a 2-second delay. Services now use a `restart()` method that preserves hidden/suppressed state across config reloads.
 - Fixed block entity cache (`ChunkBECache`) never invalidating when blocks are placed or broken — newly placed chests/furnaces/etc. were invisible to `BlockEntityVisibilityService` and never masked until a full plugin reload. Added `BlockChangeListener` to invalidate the cache for the affected chunk on `BlockPlaceEvent`/`BlockBreakEvent`.
 - Fixed `BlockEntityVisibilityService` task leak — the scheduler task was never stopped on plugin disable or config reload, causing duplicate tasks to accumulate.
@@ -37,3 +38,4 @@
 ### Testing
 - Added JUnit 5 and Mockito test dependencies.
 - Added unit tests for `MoreMaterials`, `PlayerMaskState`, and `TpsGuard` (20 tests).
+- Added unit tests for `blockExitDistance` AABB ray-exit calculation (10 tests).

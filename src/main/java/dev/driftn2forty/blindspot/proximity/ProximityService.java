@@ -209,15 +209,47 @@ public final class ProximityService implements VisibilityChecker {
             Material mat = hitBlock.getType();
             if (!config.ptMaterials.contains(mat)) return false;
 
-            // advance past the passthrough block
-            Vector hitPos = hit.getHitPosition();
-            Vector step = dir.clone().multiply(0.05);
-            Vector advanced = hitPos.add(step);
+            // advance past the far edge of the passthrough block (full 1×1×1 AABB)
+            double tExit = blockExitDistance(start.toVector(), dir,
+                    hitBlock.getX(), hitBlock.getY(), hitBlock.getZ());
+            Vector advanced = start.toVector().add(dir.clone().multiply(tExit + 0.01));
             start = advanced.toLocation(world);
             remaining = target.distance(advanced);
             if (remaining < 0.01) return true;
         }
         return false;
+    }
+
+    /**
+     * Returns the distance along the ray from {@code origin} (in direction
+     * {@code dir}, which must be normalised) to the exit face of the 1×1×1
+     * block whose min-corner is (bx, by, bz).
+     */
+    static double blockExitDistance(Vector origin, Vector dir, int bx, int by, int bz) {
+        double tExit = Double.MAX_VALUE;
+
+        double dx = dir.getX();
+        if (dx > 1e-9) {
+            tExit = Math.min(tExit, (bx + 1 - origin.getX()) / dx);
+        } else if (dx < -1e-9) {
+            tExit = Math.min(tExit, (bx - origin.getX()) / dx);
+        }
+
+        double dy = dir.getY();
+        if (dy > 1e-9) {
+            tExit = Math.min(tExit, (by + 1 - origin.getY()) / dy);
+        } else if (dy < -1e-9) {
+            tExit = Math.min(tExit, (by - origin.getY()) / dy);
+        }
+
+        double dz = dir.getZ();
+        if (dz > 1e-9) {
+            tExit = Math.min(tExit, (bz + 1 - origin.getZ()) / dz);
+        } else if (dz < -1e-9) {
+            tExit = Math.min(tExit, (bz - origin.getZ()) / dz);
+        }
+
+        return Math.max(tExit, 0.0);
     }
 
     public boolean isBlockVisible(Player viewer, BlockVector blockPos) {
