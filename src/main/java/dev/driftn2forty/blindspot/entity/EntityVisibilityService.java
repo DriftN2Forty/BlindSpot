@@ -103,7 +103,8 @@ public final class EntityVisibilityService {
                 boolean visible = proximity.isEntityVisible(p, e);
 
                 if (visible) {
-                    remaskTimers.getOrDefault(p.getUniqueId(), Map.of()).remove(e.getUniqueId());
+                    Map<UUID, Long> timers = remaskTimers.get(p.getUniqueId());
+                    if (timers != null) timers.remove(e.getUniqueId());
                     if (!hidden.contains(e.getUniqueId())) continue;
                     try {
                         p.showEntity(plugin, e);

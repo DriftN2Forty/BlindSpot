@@ -83,7 +83,7 @@ entities:
   # entityTraceMode controls how many points on the entity bounding box are checked.
   # More points = more accurate around corners, but more raycasts per entity.
   # 1 = center only, 2 = 6 face centers, 3 = 8 corners, 4 = 6 face centers + 8 corners
-  entityTraceMode: 3
+  entityTraceMode: 2
   
   suppressTypes:
     - VILLAGER
