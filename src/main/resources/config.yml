@@ -303,9 +303,10 @@ scanBlocks:
     ANVIL: STONE
     CHIPPED_ANVIL: STONE
     DAMAGED_ANVIL: STONE
-    COMPOSTER: STONE
+    COMPOSTER: AIR
     TRIPWIRE_HOOK: STONE
     NETHER_PORTAL: STONE
+    STRING: STONE
   materials:
     - BOOKSHELF
     - CRAFTING_TABLE
@@ -320,6 +321,7 @@ scanBlocks:
     - DAMAGED_ANVIL
     - TRIPWIRE_HOOK
     - NETHER_PORTAL
+    - STRING
 
 tpsGuard:
   enabled: true
