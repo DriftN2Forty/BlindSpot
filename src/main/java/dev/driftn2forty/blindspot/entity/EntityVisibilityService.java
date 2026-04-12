@@ -116,6 +116,14 @@ public final class EntityVisibilityService {
 
                 boolean visible = proximity.isEntityVisible(p, e);
 
+                // requireCrouchToHide: players are only eligible for hiding while sneaking
+                boolean crouchRequired = config.entityRequireCrouchToHide
+                        && e.getType() == EntityType.PLAYER;
+                if (crouchRequired && !((Player) e).isSneaking()) {
+                    // target is not crouching — force visible
+                    visible = true;
+                }
+
                 if (visible) {
                     Map<UUID, Long> timers = remaskTimers.get(p.getUniqueId());
                     if (timers != null) timers.remove(e.getUniqueId());
@@ -127,6 +135,15 @@ public final class EntityVisibilityService {
                 } else {
                     if (!config.entityRemaskLeaving) continue;
                     if (hidden.contains(e.getUniqueId())) continue;
+
+                    // skip remask delay when crouchToHide applies — hide immediately
+                    if (crouchRequired) {
+                        try {
+                            p.hideEntity(plugin, e);
+                        } catch (Throwable ignored) {}
+                        hidden.add(e.getUniqueId());
+                        continue;
+                    }
 
                     Map<UUID, Long> timers = remaskTimers
                             .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());

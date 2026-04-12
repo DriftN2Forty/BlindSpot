@@ -38,28 +38,28 @@ blockEntities:
     highPriorityInterval: 2    # ticks
 
   placeholders:
-    CHEST: CRAFTING_TABLE
-    TRAPPED_CHEST: CRAFTING_TABLE
-    BARREL: OAK_PLANKS
-    ENDER_CHEST: OBSIDIAN
-    HOPPER: POLISHED_ANDESITE
+    CHEST: STONE
+    TRAPPED_CHEST: STONE
+    BARREL: STONE
+    ENDER_CHEST: STONE
+    HOPPER: STONE
     FURNACE: STONE
     BLAST_FURNACE: STONE
     SMOKER: STONE
-    LECTERN: OAK_PLANKS
+    LECTERN: STONE
     SPAWNER: DEEPSLATE
-    JUKEBOX: OAK_PLANKS
-    BREWING_STAND: COBBLESTONE
-    CAMPFIRE: COBBLESTONE
-    SOUL_CAMPFIRE: COBBLESTONE
-    BEE_NEST: OAK_PLANKS
-    BEEHIVE: OAK_PLANKS
-    COMPOSTER: OAK_PLANKS
-    CARTOGRAPHY_TABLE: OAK_PLANKS
-    SMITHING_TABLE: OAK_PLANKS
+    JUKEBOX: STONE
+    BREWING_STAND: STONE
+    CAMPFIRE: STONE
+    SOUL_CAMPFIRE: STONE
+    BEE_NEST: STONE
+    BEEHIVE: STONE
+    COMPOSTER: STONE
+    CARTOGRAPHY_TABLE: STONE
+    SMITHING_TABLE: STONE
     STONECUTTER: STONE
-    ENCHANTING_TABLE: OBSIDIAN
-    BELL: GOLD_BLOCK
+    ENCHANTING_TABLE: STONE
+    BELL: STONE
   maskMaterials:
     - CHEST
     - TRAPPED_CHEST
@@ -91,6 +91,12 @@ entities:
   remaskWhenLeaving: true    # re-hide entities when leaving reveal radius or LOS
   remaskDelay: 2             # seconds to wait before re-hiding (debounce)
   losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
+
+  # requireCrouchToHide — when true, PLAYER entities are only hidden while they
+  # are crouching (sneaking). Non-crouching players are always visible regardless
+  # of LOS or proximity. Hiding is instant (no remaskDelay) in this mode.
+  # Has no effect on non-player entity types.
+  requireCrouchToHide: false
   
   # entityTraceMode controls how many points on the entity bounding box are checked.
   # More points = more accurate around corners, but more raycasts per entity.
