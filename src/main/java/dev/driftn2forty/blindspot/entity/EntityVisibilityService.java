@@ -4,6 +4,7 @@ import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.guard.TpsThrottle;
 import dev.driftn2forty.blindspot.proximity.VisibilityChecker;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -27,6 +28,9 @@ public final class EntityVisibilityService {
     private final Map<UUID, Set<UUID>> hiddenByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final TickTimings timings = new TickTimings();
+    private int tickCounter;
+    private int fullTickEvery;
+    private static final int NORMAL_INTERVAL = 10;
 
     public EntityVisibilityService(Plugin plugin, PluginConfig config,
                                    VisibilityChecker proximity, TpsThrottle tpsGuard) {
@@ -39,7 +43,9 @@ public final class EntityVisibilityService {
     public void start() {
         stop();
         if (!config.enabled || !config.entityEnabled) return;
-        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 40L, 10L);
+        this.tickCounter = 0;
+        this.fullTickEvery = (NORMAL_INTERVAL + config.entityHighPriorityInterval - 1) / config.entityHighPriorityInterval;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 40L, config.entityHighPriorityInterval);
     }
 
     public void stop() {
@@ -58,7 +64,9 @@ public final class EntityVisibilityService {
             revealAll();
             return;
         }
-        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 10L);
+        this.tickCounter = 0;
+        this.fullTickEvery = (NORMAL_INTERVAL + config.entityHighPriorityInterval - 1) / config.entityHighPriorityInterval;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, config.entityHighPriorityInterval);
     }
 
     private void revealAll() {
@@ -86,6 +94,9 @@ public final class EntityVisibilityService {
         if (!config.enabled || !config.entityEnabled) return;
         if (!tpsGuard.allowHeavyWork()) return;
 
+        boolean fullTick = tickCounter % fullTickEvery == 0;
+        tickCounter++;
+
         long start = System.nanoTime();
         try {
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -95,10 +106,13 @@ public final class EntityVisibilityService {
             Set<UUID> hidden = hiddenByPlayer.computeIfAbsent(p.getUniqueId(),
                     k -> ConcurrentHashMap.newKeySet());
             double scan = Math.max(48, config.entityLosMaxRevealDistance + 8);
+            Location playerLoc = p.getLocation();
 
             for (Entity e : p.getNearbyEntities(scan, scan, scan)) {
                 if (e == p || !config.entitySuppressTypes.contains(e.getType())) continue;
                 if (e.getType() == EntityType.ITEM_FRAME || e.getType() == EntityType.GLOW_ITEM_FRAME) continue;
+
+                if (!fullTick && playerLoc.distanceSquared(e.getLocation()) > config.entityHighPriorityRadiusSq) continue;
 
                 boolean visible = proximity.isEntityVisible(p, e);
 

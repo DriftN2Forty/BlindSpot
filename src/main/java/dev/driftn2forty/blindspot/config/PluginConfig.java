@@ -37,6 +37,14 @@ public final class PluginConfig {
     public int entityLosMaxRevealDistance;
     public Set<EntityType> entitySuppressTypes;
 
+    public int beHighPriorityRadius;
+    public double beHighPriorityRadiusSq;
+    public int beHighPriorityInterval;
+
+    public int entityHighPriorityRadius;
+    public double entityHighPriorityRadiusSq;
+    public int entityHighPriorityInterval;
+
     public boolean tpsGuardEnabled;
     public double tpsGuardMin;
     public String bypassPermission;
@@ -69,6 +77,9 @@ public final class PluginConfig {
         this.beMode = clampMode(cfg.getInt("blockEntities.mode", 2));
         this.beLosMaxRevealDistance = Math.max(8, cfg.getInt("blockEntities.losMaxRevealDistance", 120));
         this.beBlockTraceMode = Math.max(1, Math.min(4, cfg.getInt("blockEntities.blockTraceMode", 2)));
+        this.beHighPriorityRadius = Math.max(1, cfg.getInt("blockEntities.tickPriority.highPriorityRadius", 24));
+        this.beHighPriorityInterval = Math.min(8, Math.max(1, cfg.getInt("blockEntities.tickPriority.highPriorityInterval", 4)));
+        this.beHighPriorityRadiusSq = (double) beHighPriorityRadius * beHighPriorityRadius;
 
         this.bePlaceholders = new EnumMap<>(Material.class);
         ConfigurationSection ph = cfg.getConfigurationSection("blockEntities.placeholders");
@@ -103,6 +114,9 @@ public final class PluginConfig {
             try { parsedTypes.add(EntityType.valueOf(s)); } catch (IllegalArgumentException ignored) {}
         }
         this.entitySuppressTypes = Collections.unmodifiableSet(parsedTypes);
+        this.entityHighPriorityRadius = Math.max(1, cfg.getInt("entities.tickPriority.highPriorityRadius", 24));
+        this.entityHighPriorityInterval = Math.min(10, Math.max(1, cfg.getInt("entities.tickPriority.highPriorityInterval", 5)));
+        this.entityHighPriorityRadiusSq = (double) entityHighPriorityRadius * entityHighPriorityRadius;
 
         this.tpsGuardEnabled = cfg.getBoolean("tpsGuard.enabled", true);
         this.tpsGuardMin = cfg.getDouble("tpsGuard.minTps", 18.5);

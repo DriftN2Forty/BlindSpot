@@ -14,6 +14,7 @@ import dev.driftn2forty.blindspot.guard.TpsThrottle;
 import dev.driftn2forty.blindspot.proximity.VisibilityChecker;
 import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
@@ -51,6 +52,9 @@ public final class ItemFrameVisibilityService {
     private final Map<UUID, Map<Integer, UUID>> suppressedFrames = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Integer, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final TickTimings timings = new TickTimings();
+    private int tickCounter;
+    private int fullTickEvery;
+    private static final int NORMAL_INTERVAL = 10;
 
     public ItemFrameVisibilityService(Plugin plugin, PluginConfig config,
                             VisibilityChecker proximity, TpsThrottle tpsGuard) {
@@ -75,7 +79,9 @@ public final class ItemFrameVisibilityService {
         this.packetListener = new FrameSpawnInterceptor();
         PacketEvents.getAPI().getEventManager().registerListener(packetListener);
 
-        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 40L, 10L);
+        this.tickCounter = 0;
+        this.fullTickEvery = (NORMAL_INTERVAL + config.entityHighPriorityInterval - 1) / config.entityHighPriorityInterval;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 40L, config.entityHighPriorityInterval);
     }
 
     public void stop() {
@@ -120,7 +126,9 @@ public final class ItemFrameVisibilityService {
             PacketEvents.getAPI().getEventManager().registerListener(packetListener);
         }
 
-        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 10L);
+        this.tickCounter = 0;
+        this.fullTickEvery = (NORMAL_INTERVAL + config.entityHighPriorityInterval - 1) / config.entityHighPriorityInterval;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, config.entityHighPriorityInterval);
     }
 
     public TickTimings getTimings() { return timings; }
@@ -130,6 +138,9 @@ public final class ItemFrameVisibilityService {
     private void tick() {
         if (!config.enabled || !config.entityEnabled) return;
         if (!tpsGuard.allowHeavyWork()) return;
+
+        boolean fullTick = tickCounter % fullTickEvery == 0;
+        tickCounter++;
 
         long start = System.nanoTime();
         try {
@@ -147,10 +158,13 @@ public final class ItemFrameVisibilityService {
                     .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
 
             double scan = Math.max(48, config.entityLosMaxRevealDistance + 8);
+            Location playerLoc = p.getLocation();
 
             for (Entity e : p.getNearbyEntities(scan, scan, scan)) {
                 if (!FRAME_TYPES.contains(e.getType())) continue;
                 if (!config.entitySuppressTypes.contains(e.getType())) continue;
+
+                if (!fullTick && playerLoc.distanceSquared(e.getLocation()) > config.entityHighPriorityRadiusSq) continue;
 
                 boolean visible = proximity.isEntityVisible(p, e);
 

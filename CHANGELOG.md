@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+### Features
+- Added proximity-based tick priority — entities and block entities within a configurable `highPriorityRadius` (default 24 blocks) are now rechecked at a faster tick rate (`highPriorityInterval`), while distant targets keep the normal rate. Configured separately for block entities (default 4 ticks, base 8) and entities/item frames (default 5 ticks, base 10). The fast interval is clamped so it can never exceed the normal rate.
+
 ### Bug Fixes
 - Fixed LOS passthrough not working for fence gates, glass, and other passthrough blocks — the ray only advanced 0.05 units past the hit surface, which was still inside the block, causing the same block to be hit repeatedly until retries were exhausted. The ray now calculates the exit face of the full 1×1×1 block AABB and resumes from just past it.
 - Fixed `/blindspot reload` causing all hidden entities and block entities to become visible — the reload path cleared mask state and called `stop()` (which explicitly un-hides everything), then restarted with a 2-second delay. Services now use a `restart()` method that preserves hidden/suppressed state across config reloads.

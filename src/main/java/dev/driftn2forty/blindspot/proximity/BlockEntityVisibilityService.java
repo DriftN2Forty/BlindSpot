@@ -30,6 +30,9 @@ public final class BlockEntityVisibilityService {
     private BukkitTask task;
     private final Map<UUID, Map<BlockVector, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final TickTimings timings = new TickTimings();
+    private int tickCounter;
+    private int fullTickEvery;
+    private static final int NORMAL_INTERVAL = 8;
 
     public BlockEntityVisibilityService(Plugin plugin, PluginConfig config, VisibilityChecker proximity,
                             BlockEntityCache beCache, MaskStateTracker maskState, TpsThrottle tpsGuard) {
@@ -43,7 +46,9 @@ public final class BlockEntityVisibilityService {
 
     public void start() {
         stop();
-        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 8L);
+        this.tickCounter = 0;
+        this.fullTickEvery = (NORMAL_INTERVAL + config.beHighPriorityInterval - 1) / config.beHighPriorityInterval;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, config.beHighPriorityInterval);
     }
 
     public void stop() {
@@ -57,7 +62,9 @@ public final class BlockEntityVisibilityService {
         task = null;
         remaskTimers.clear();
         if (!config.enabled || !config.beEnabled) return;
-        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 8L);
+        this.tickCounter = 0;
+        this.fullTickEvery = (NORMAL_INTERVAL + config.beHighPriorityInterval - 1) / config.beHighPriorityInterval;
+        this.task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, config.beHighPriorityInterval);
     }
 
     public TickTimings getTimings() { return timings; }
@@ -65,6 +72,9 @@ public final class BlockEntityVisibilityService {
     private void tick() {
         if (!config.enabled || !config.beEnabled) return;
         if (!tpsGuard.allowHeavyWork()) return;
+
+        boolean fullTick = tickCounter % fullTickEvery == 0;
+        tickCounter++;
 
         long start = System.nanoTime();
         try {
@@ -85,6 +95,9 @@ public final class BlockEntityVisibilityService {
                     for (BlockVector bp : positions) {
                         Location blockLoc = new Location(p.getWorld(),
                                 bp.getBlockX(), bp.getBlockY(), bp.getBlockZ());
+
+                        if (!fullTick && loc.distanceSquared(blockLoc) > config.beHighPriorityRadiusSq) continue;
+
                         boolean visible = proximity.isBlockVisible(p, bp);
 
                         if (visible) {

@@ -25,6 +25,13 @@ blockEntities:
   # 1 = center only, 2 = 6 face centers, 3 = 8 corners, 4 = 6 face centers + 8 corners
   blockTraceMode: 2
 
+  # tickPriority — entities within highPriorityRadius recheck at a faster tick rate.
+  # Everything else keeps the normal 8-tick interval.
+  # highPriorityInterval must be <= 8 (clamped automatically if higher).
+  tickPriority:
+    highPriorityRadius: 16     # blocks
+    highPriorityInterval: 2    # ticks
+
   placeholders:
     CHEST: CRAFTING_TABLE
     TRAPPED_CHEST: CRAFTING_TABLE
@@ -84,7 +91,14 @@ entities:
   # More points = more accurate around corners, but more raycasts per entity.
   # 1 = center only, 2 = 6 face centers, 3 = 8 corners, 4 = 6 face centers + 8 corners
   entityTraceMode: 2
-  
+
+  # tickPriority — entities within highPriorityRadius recheck at a faster tick rate.
+  # Everything else keeps the normal 10-tick interval.
+  # highPriorityInterval must be <= 10 (clamped automatically if higher).
+  tickPriority:
+    highPriorityRadius: 16     # blocks
+    highPriorityInterval: 2    # ticks
+
   suppressTypes:
     - PLAYER
     - VILLAGER
