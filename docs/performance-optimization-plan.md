@@ -12,21 +12,29 @@ be tackled independently unless noted otherwise.
 
 ## Phase 1 — High-Impact Architectural Changes
 
-### 1. Consolidate `getNearbyEntities()` Calls
+### 1. Consolidate `getNearbyEntities()` Calls Across Entity Services
 
 **Problem**
 `EntityVisibilityService`, `PlayerVisibilityService`, and
 `ItemFrameVisibilityService` each independently call
-`Player.getNearbyEntities(scan, scan, scan)` — one of the most expensive
-Bukkit API calls. When all three fire on the same tick (every 10 ticks), that
-produces **three full entity scans per player** over a ~128-block cube.
+`Player.getNearbyEntities(scan, scan, scan)` for the **same player** in the
+same tick cycle.  When all three fire together (every 10 ticks), a single
+player triggers **three identical Bukkit entity scans** over a ~128-block
+cube, each returning the same set of entities.
+
+Block-entity and scan-block services (`BlockEntityVisibilityService`,
+`BlockVisibilityService`) are not affected — they iterate cached chunk data
+rather than calling `getNearbyEntities`.
 
 **Suggestion**
-Create a shared `EntityScanCache` that calls `getNearbyEntities` once per
-player per tick cycle and exposes the result to all three services.  Invalidate
-at the start of each tick.
+Create a shared `EntityScanCache` that calls `getNearbyEntities` **once per
+player per tick cycle** and makes the result available to all three entity
+services.  Each service filters the shared list for its own entity types
+(general entities, players, item frames) instead of performing a separate
+Bukkit scan.  The cache is cleared at the start of each tick.
 
-**Estimated Reduction:** ~60% of entity-scan overhead.  
+**Estimated Reduction:** ~60% of entity-scan overhead (eliminates 2 of 3
+redundant calls per player).  
 **Complexity:** Low.  
 **Files:** `EntityVisibilityService`, `PlayerVisibilityService`,
 `ItemFrameVisibilityService`, new `EntityScanCache` class.
@@ -54,7 +62,7 @@ invalidation.
 
 ---
 
-### 3. Skip Stationary / AFK Players
+### 3. Skip Stationary Players for Block Checks
 
 **Problem**
 All online players are checked every tick even if they haven't moved or
@@ -66,11 +74,25 @@ Before running the full scan loop for a player, compare their current
 `Location` (x, y, z, yaw, pitch) against a snapshot from the previous check.
 If the delta is below a threshold (< 0.1 blocks and < 2° rotation) **and** no
 nearby block-change events have been flagged by `BlockChangeListener`, skip
-that player entirely.
+that player's **block-entity and scan-block** checks entirely — the results
+are unchanged because neither the player nor the blocks have moved.
 
-**Estimated Reduction:** 30–50% of all per-tick work.  
+**Important caveat:** `EntityVisibilityService` and `PlayerVisibilityService`
+must still run for stationary players because other entities (players,
+villagers, animals, etc.) move independently.
+`ItemFrameVisibilityService` **can** also be skipped for stationary players
+because item frames are stationary entities — however, a
+`HangingPlaceEvent` / `HangingBreakEvent` listener would be needed to flag
+nearby stationary players for a re-check when item frames are placed or
+removed (item frames are entities, not blocks, so `BlockPlaceEvent` /
+`BlockBreakEvent` do not fire for them).
+
+**Estimated Reduction:** 30–50% of block-visibility work plus item-frame
+visibility work (does not reduce mobile-entity visibility work).  
 **Complexity:** Low.  
-**Files:** All visibility services, or a shared `PlayerDeltaTracker`.
+**Files:** `BlockEntityVisibilityService`, `BlockVisibilityService`,
+`ItemFrameVisibilityService`, or a shared `PlayerDeltaTracker`. New
+`HangingChangeListener` for item-frame placement/removal invalidation.
 
 ---
 
@@ -270,7 +292,7 @@ This is a documentation / README improvement, not a code change.
 |----|-------------------------------------|----------------------|------------|
 | 1  | Consolidate getNearbyEntities       | ~60% entity scan     | Low        |
 | 2  | Raycast result cache                | 30–70% raycasts      | Medium     |
-| 3  | Skip stationary players             | 30–50% of all work   | Low        |
+| 3  | Skip stationary players (blocks)    | 30–50% block work    | Low        |
 | 4  | Chunk FOV culling                   | ~40% chunk iterations| Low        |
 | 5  | Stagger players across ticks        | Halves peak tick cost| Low        |
 | 6  | Reduce Vector allocation            | GC pressure          | Medium     |

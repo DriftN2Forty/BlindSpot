@@ -226,7 +226,17 @@ public final class PlayerVisibilityService {
 
     private boolean computeVisibility(Player observer, Player target) {
         if (config.entityRequireCrouchToHide) {
-            return !target.isSneaking() || proximity.isEntityVisible(observer, target);
+            boolean standing = !target.isSneaking();
+
+            if (standing && config.entityCloseTrackingRadiusSq > 0) {
+                double distSq = observer.getLocation().distanceSquared(target.getLocation());
+                if (distSq <= config.entityCloseTrackingRadiusSq) {
+                    return true;
+                }
+                return proximity.isEntityVisible(observer, target);
+            }
+
+            return standing || proximity.isEntityVisible(observer, target);
         }
         return proximity.isEntityVisible(observer, target);
     }

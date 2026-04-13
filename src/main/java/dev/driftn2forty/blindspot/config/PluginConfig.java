@@ -41,6 +41,8 @@ public final class PluginConfig {
     public int entityTraceModeFallbackDistance;
     public double entityTraceModeFallbackDistanceSq;
     public boolean entityRequireCrouchToHide;
+    public int entityCloseTrackingRadius;
+    public double entityCloseTrackingRadiusSq;
 
     public int beHighPriorityRadius;
     public double beHighPriorityRadiusSq;
@@ -137,6 +139,8 @@ public final class PluginConfig {
         }
         this.entitySuppressTypes = Collections.unmodifiableSet(parsedTypes);
         this.entityRequireCrouchToHide = cfg.getBoolean("entities.requireCrouchToHide", false);
+        this.entityCloseTrackingRadius = Math.max(0, cfg.getInt("entities.closeTrackingRadius", 0));
+        this.entityCloseTrackingRadiusSq = (double) entityCloseTrackingRadius * entityCloseTrackingRadius;
         this.entityTraceModeFallbackDistance = Math.max(0, cfg.getInt("entities.traceModeFallbackDistance", 48));
         this.entityTraceModeFallbackDistanceSq = (double) entityTraceModeFallbackDistance * entityTraceModeFallbackDistance;
         this.entityHighPriorityRadius = Math.max(1, cfg.getInt("entities.tickPriority.highPriorityRadius", 24));

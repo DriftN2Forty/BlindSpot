@@ -93,11 +93,27 @@ entities:
   remaskDelay: 2             # seconds to wait before re-hiding (debounce)
   losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
 
-  # requireCrouchToHide — when true, PLAYER entities are only hidden while they
-  # are crouching (sneaking). Non-crouching players are always visible regardless
-  # of LOS or proximity. Hiding is instant (no remaskDelay) in this mode.
+  # requireCrouchToHide — controls stance-aware visibility for PLAYER entities.
+  # When true, a player's stance (standing vs crouching) affects whether they
+  # can be seen. See closeTrackingRadius below for distance-based tuning.
+  # When false, all players follow the normal visibility mode regardless of stance.
   # Has no effect on non-player entity types.
   requireCrouchToHide: false
+
+  # closeTrackingRadius — short-range distance (in blocks) within which a
+  # standing player is always visible, even through walls.
+  # Beyond this radius, standing players require LOS to be seen (just like
+  # crouching players do at any distance).
+  #
+  # Set to 0 to disable the distance gate — standing players are always
+  # visible at any range (legacy behaviour).
+  #
+  # Only used when requireCrouchToHide is true. Ignored otherwise.
+  #
+  # Example: with server tracking at 128 and closeTrackingRadius at 16,
+  # nearby fights feel natural (you can sense someone through a thin wall)
+  # but underground players are invisible from the surface.
+  closeTrackingRadius: 0
   
   # entityTraceMode controls how many points on the entity bounding box are checked.
   # More points = more accurate around corners, but more raycasts per entity.
