@@ -203,9 +203,10 @@ public final class PlayerVisibilityService {
                         if (wasEverRevealed) {
                             if (!config.entityRemaskLeaving) continue;
 
-                            if (config.entityRequireCrouchToHide) {
-                                // crouch mode: hide instantly, no debounce
+                            if (config.entityRequireCrouchToHide && target.isSneaking()) {
+                                // crouching: hide instantly, no debounce
                             } else {
+                                // standing at range (or non-crouch mode): use remaskDelay
                                 long now = System.currentTimeMillis();
                                 Long since = timers.putIfAbsent(target.getEntityId(), now);
                                 if (since == null) since = now;
