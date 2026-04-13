@@ -4,6 +4,7 @@ import dev.driftn2forty.blindspot.command.ReloadCommand;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.entity.EntityVisibilityService;
 import dev.driftn2forty.blindspot.entity.ItemFrameVisibilityService;
+import dev.driftn2forty.blindspot.entity.PlayerVisibilityService;
 import dev.driftn2forty.blindspot.guard.TpsGuard;
 import dev.driftn2forty.blindspot.mask.BlockEntityMasker;
 import dev.driftn2forty.blindspot.mask.BlockChangeListener;
@@ -29,6 +30,7 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private BlockEntityMasker blockEntityMasker;
     private EntityVisibilityService entityVisibilityService;
     private ItemFrameVisibilityService itemFrameVisibilityService;
+    private PlayerVisibilityService playerVisibilityService;
     private TpsGuard tpsGuard;
     private BlockEntityVisibilityService blockEntityVisibilityService;
     private NmsChunkScanner nmsChunkScanner;
@@ -95,6 +97,10 @@ public final class BlindSpotPlugin extends JavaPlugin {
                 this.proximityService, this.tpsGuard);
         this.itemFrameVisibilityService.start();
 
+        this.playerVisibilityService = new PlayerVisibilityService(this, this.pluginConfig,
+                this.proximityService, this.tpsGuard);
+        this.playerVisibilityService.start();
+
         this.blockEntityVisibilityService = new BlockEntityVisibilityService(this, this.pluginConfig, this.proximityService,
                 this.beCache, this.maskState, this.tpsGuard);
         this.blockEntityVisibilityService.start();
@@ -121,6 +127,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         }
         if (this.itemFrameVisibilityService != null) {
             this.itemFrameVisibilityService.stop();
+        }
+        if (this.playerVisibilityService != null) {
+            this.playerVisibilityService.stop();
         }
         if (this.blockEntityVisibilityService != null) {
             this.blockEntityVisibilityService.stop();
@@ -149,6 +158,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         if (this.itemFrameVisibilityService != null) {
             this.itemFrameVisibilityService.restart();
         }
+        if (this.playerVisibilityService != null) {
+            this.playerVisibilityService.restart();
+        }
         if (this.blockEntityVisibilityService != null) {
             this.blockEntityVisibilityService.restart();
         }
@@ -165,7 +177,8 @@ public final class BlindSpotPlugin extends JavaPlugin {
     public TickTimings[] getEntityTimings() {
         return new TickTimings[]{
                 entityVisibilityService != null ? entityVisibilityService.getTimings() : null,
-                itemFrameVisibilityService != null ? itemFrameVisibilityService.getTimings() : null
+                itemFrameVisibilityService != null ? itemFrameVisibilityService.getTimings() : null,
+                playerVisibilityService != null ? playerVisibilityService.getTimings() : null
         };
     }
 

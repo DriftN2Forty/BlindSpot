@@ -100,6 +100,7 @@ public final class EntityVisibilityService {
 
             for (Entity e : p.getNearbyEntities(scan, scan, scan)) {
                 if (e == p || !config.entitySuppressTypes.contains(e.getType())) continue;
+                if (e.getType() == EntityType.PLAYER) continue;
                 if (e.getType() == EntityType.ITEM_FRAME || e.getType() == EntityType.GLOW_ITEM_FRAME) continue;
 
                 boolean visible = proximity.isEntityVisible(p, e);
