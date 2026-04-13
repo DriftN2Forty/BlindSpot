@@ -1,6 +1,10 @@
 # Global enabling of BlindSpot. Set to false to disable all features without uninstalling the plugin.
 enabled: true
 
+
+
+
+
 # World filtering controls which worlds BlindSpot is active in.
 # Use the world's folder name (e.g. "world", "world_nether", "world_the_end").
 # The overworld folder name matches level-name in server.properties (default: "world").
@@ -76,6 +80,11 @@ blockEntities:
     - ENCHANTING_TABLE
     - BELL
 
+
+
+
+
+
 entities:
   enabled: true
   mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
@@ -150,6 +159,70 @@ entities:
     - CHERRY_CHEST_BOAT
     - PALE_OAK_CHEST_BOAT
     - BAMBOO_CHEST_RAFT
+
+
+
+
+
+
+
+# Scan Blocks — masks non-block-entity blocks (crafting tables, grindstones, etc.)
+# that can't be discovered via Chunk.getTileEntities().
+# Uses NMS palette scanning to efficiently locate these blocks in chunks.
+# The palette check is O(1) per chunk section (16×16×16); only sections whose
+# palette contains a target material are fully scanned.
+#
+# Requires Paper 1.20.5+ with Mojang mappings. If NMS reflection fails at
+# startup a warning is logged and this feature is silently disabled.
+scanBlocks:
+  enabled: true
+  mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
+  revealRadius: 12           # used by modes 1 and 3
+  remaskWhenLeaving: true    # re-mask blocks when leaving reveal radius or LOS
+  remaskDelay: 2             # seconds to wait before re-masking (debounce)
+  losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
+  blockTraceMode: 2          # 1 = center, 2 = 6 face centers, 3 = 8 corners, 4 = faces + corners
+  traceModeFallbackDistance: 48
+
+  tickPriority:
+    highPriorityRadius: 16     # blocks
+    highPriorityInterval: 2    # ticks
+
+  placeholders:
+    BOOKSHELF: STONE
+    CRAFTING_TABLE: STONE
+    CARTOGRAPHY_TABLE: STONE
+    COMPOSTER: STONE
+    SMITHING_TABLE: STONE
+    STONECUTTER: STONE
+    GRINDSTONE: STONE
+    LOOM: STONE
+    ANVIL: STONE
+    CHIPPED_ANVIL: STONE
+    DAMAGED_ANVIL: STONE
+    COMPOSTER: AIR
+    TRIPWIRE_HOOK: STONE
+    NETHER_PORTAL: AIR
+  materials:
+    - BOOKSHELF
+    - CRAFTING_TABLE
+    - CARTOGRAPHY_TABLE
+    - COMPOSTER
+    - SMITHING_TABLE
+    - STONECUTTER
+    - GRINDSTONE
+    - LOOM
+    - ANVIL
+    - CHIPPED_ANVIL
+    - DAMAGED_ANVIL
+    - TRIPWIRE_HOOK
+    - NETHER_PORTAL
+
+
+
+
+
+
 
 # LOS Passthrough — allows raycasts to pass through certain block types.
 # When a ray hits a passthrough material, it continues through instead of stopping.
@@ -269,58 +342,10 @@ losPassthrough:
     - AZALEA_LEAVES
     - FLOWERING_AZALEA_LEAVES
 
-# Scan Blocks — masks non-block-entity blocks (crafting tables, grindstones, etc.)
-# that can't be discovered via Chunk.getTileEntities().
-# Uses NMS palette scanning to efficiently locate these blocks in chunks.
-# The palette check is O(1) per chunk section (16×16×16); only sections whose
-# palette contains a target material are fully scanned.
-#
-# Requires Paper 1.20.5+ with Mojang mappings. If NMS reflection fails at
-# startup a warning is logged and this feature is silently disabled.
-scanBlocks:
-  enabled: true
-  mode: 2                    # mode: 1 = Proximity (radius only), 2 = Line of Sight, 3 = Proximity OR LOS
-  revealRadius: 12           # used by modes 1 and 3
-  remaskWhenLeaving: true    # re-mask blocks when leaving reveal radius or LOS
-  remaskDelay: 2             # seconds to wait before re-masking (debounce)
-  losMaxRevealDistance: 120  # used by modes 2 and 3 (cap for LOS raycasts)
-  blockTraceMode: 2          # 1 = center, 2 = 6 face centers, 3 = 8 corners, 4 = faces + corners
-  traceModeFallbackDistance: 48
 
-  tickPriority:
-    highPriorityRadius: 16     # blocks
-    highPriorityInterval: 2    # ticks
 
-  placeholders:
-    BOOKSHELF: STONE
-    CRAFTING_TABLE: STONE
-    CARTOGRAPHY_TABLE: STONE
-    COMPOSTER: STONE
-    SMITHING_TABLE: STONE
-    STONECUTTER: STONE
-    GRINDSTONE: STONE
-    LOOM: STONE
-    ANVIL: STONE
-    CHIPPED_ANVIL: STONE
-    DAMAGED_ANVIL: STONE
-    COMPOSTER: AIR
-    TRIPWIRE_HOOK: STONE
-    NETHER_PORTAL: AIR
-  materials:
-    - BOOKSHELF
-    - CRAFTING_TABLE
-    - CARTOGRAPHY_TABLE
-    - COMPOSTER
-    - SMITHING_TABLE
-    - STONECUTTER
-    - GRINDSTONE
-    - LOOM
-    - ANVIL
-    - CHIPPED_ANVIL
-    - DAMAGED_ANVIL
-    - TRIPWIRE_HOOK
-    - NETHER_PORTAL
 
+    
 tpsGuard:
   enabled: true
   minTps: 18.5
