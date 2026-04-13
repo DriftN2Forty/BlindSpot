@@ -58,17 +58,18 @@ meaning but gains a distance-aware layer when paired with the new radius.
 ```yaml
 entities:
   # requireCrouchToHide — when true, player visibility is stance-aware:
-  #   Standing players are easier to detect (always visible within
+  #   Standing players are easier to detect (always tracked within
   #   closeTrackingRadius, LOS-only beyond it).
   #   Crouching players always require line of sight to be seen.
   # When false, all players use the normal visibility mode regardless of stance.
   requireCrouchToHide: true
 
   # closeTrackingRadius — the short-range distance (in blocks) within which
-  # a standing player is always visible, even through walls.
-  # Beyond this radius, standing players require LOS just like crouching players.
-  # Set to 0 to disable the distance gate (standing = always visible at any range,
-  # which is the legacy behaviour).
+  # a standing player is always tracked by the client (their nametag will be
+  # visible through walls). Beyond this radius, standing players require LOS
+  # just like crouching players.
+  # Set to 0 to disable the distance gate (standing = always tracked at any
+  # range, which is the legacy behaviour).
   # Only used when requireCrouchToHide is true. Ignored otherwise.
   closeTrackingRadius: 16
 ```
