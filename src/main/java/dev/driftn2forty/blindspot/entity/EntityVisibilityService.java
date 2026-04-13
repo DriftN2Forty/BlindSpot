@@ -26,6 +26,7 @@ public final class EntityVisibilityService {
     private BukkitTask task;
     private final Map<UUID, Set<UUID>> hiddenByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> remaskTimers = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<UUID>> revealedByPlayer = new ConcurrentHashMap<>();
     private final TickTimings timings = new TickTimings();
 
     public EntityVisibilityService(Plugin plugin, PluginConfig config,
@@ -53,6 +54,7 @@ public final class EntityVisibilityService {
         if (task != null) task.cancel();
         task = null;
         remaskTimers.clear();
+        revealedByPlayer.clear();
 
         if (!config.enabled || !config.entityEnabled) {
             revealAll();
@@ -105,27 +107,38 @@ public final class EntityVisibilityService {
                 if (visible) {
                     Map<UUID, Long> timers = remaskTimers.get(p.getUniqueId());
                     if (timers != null) timers.remove(e.getUniqueId());
+                    revealedByPlayer.computeIfAbsent(p.getUniqueId(),
+                            k -> ConcurrentHashMap.newKeySet()).add(e.getUniqueId());
                     if (!hidden.contains(e.getUniqueId())) continue;
                     try {
                         p.showEntity(plugin, e);
                     } catch (Throwable ignored) {}
                     hidden.remove(e.getUniqueId());
                 } else {
-                    if (!config.entityRemaskLeaving) continue;
                     if (hidden.contains(e.getUniqueId())) continue;
 
-                    Map<UUID, Long> timers = remaskTimers
-                            .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
-                    long now = System.currentTimeMillis();
-                    Long since = timers.putIfAbsent(e.getUniqueId(), now);
-                    if (since == null) since = now;
-                    if (now - since < config.entityRemaskDelayMs) continue;
+                    // Check if this entity was ever revealed to this player.
+                    // If not, this is initial hiding — apply immediately.
+                    Set<UUID> revealed = revealedByPlayer.get(p.getUniqueId());
+                    boolean wasEverRevealed = revealed != null && revealed.contains(e.getUniqueId());
+
+                    if (wasEverRevealed) {
+                        // Re-hiding: respect entityRemaskLeaving flag and delay
+                        if (!config.entityRemaskLeaving) continue;
+
+                        Map<UUID, Long> timers = remaskTimers
+                                .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
+                        long now = System.currentTimeMillis();
+                        Long since = timers.putIfAbsent(e.getUniqueId(), now);
+                        if (since == null) since = now;
+                        if (now - since < config.entityRemaskDelayMs) continue;
+                        timers.remove(e.getUniqueId());
+                    }
 
                     try {
                         p.hideEntity(plugin, e);
                     } catch (Throwable ignored) {}
                     hidden.add(e.getUniqueId());
-                    timers.remove(e.getUniqueId());
                 }
             }
         }

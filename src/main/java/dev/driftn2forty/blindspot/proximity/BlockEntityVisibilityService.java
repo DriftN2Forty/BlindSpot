@@ -16,6 +16,7 @@ import org.bukkit.util.BlockVector;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,6 +30,7 @@ public final class BlockEntityVisibilityService {
     private final TpsThrottle tpsGuard;
     private BukkitTask task;
     private final Map<UUID, Map<BlockVector, Long>> remaskTimers = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<BlockVector>> revealedByPlayer = new ConcurrentHashMap<>();
     private final TickTimings timings = new TickTimings();
     private int tickCounter;
     private int fullTickEvery;
@@ -61,6 +63,7 @@ public final class BlockEntityVisibilityService {
         if (task != null) task.cancel();
         task = null;
         remaskTimers.clear();
+        revealedByPlayer.clear();
         if (!config.enabled || !config.beEnabled) return;
         this.tickCounter = 0;
         this.fullTickEvery = (NORMAL_INTERVAL + config.beHighPriorityInterval - 1) / config.beHighPriorityInterval;
@@ -103,25 +106,37 @@ public final class BlockEntityVisibilityService {
                         if (visible) {
                             Map<BlockVector, Long> t = remaskTimers.get(p.getUniqueId());
                             if (t != null) t.remove(bp);
+                            revealedByPlayer.computeIfAbsent(p.getUniqueId(),
+                                    k -> ConcurrentHashMap.newKeySet()).add(bp);
                             if (!maskState.isMaskedFor(p.getUniqueId(), bp)) continue;
                             p.sendBlockChange(blockLoc, blockLoc.getBlock().getBlockData());
                             maskState.setMasked(p.getUniqueId(), bp, false);
                         } else {
                             Material real = blockLoc.getBlock().getType();
-                            if (!config.beRemaskLeaving || !config.beMaskMaterials.contains(real)) continue;
+                            if (!config.beMaskMaterials.contains(real)) continue;
                             if (maskState.isMaskedFor(p.getUniqueId(), bp)) continue;
 
-                            Map<BlockVector, Long> timers = remaskTimers
-                                    .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
-                            long now = System.currentTimeMillis();
-                            Long since = timers.putIfAbsent(bp, now);
-                            if (since == null) since = now;
-                            if (now - since < config.beRemaskDelayMs) continue;
+                            // Check if this block was ever revealed to this player.
+                            // If not, this is initial masking — apply immediately.
+                            Set<BlockVector> revealed = revealedByPlayer.get(p.getUniqueId());
+                            boolean wasEverRevealed = revealed != null && revealed.contains(bp);
+
+                            if (wasEverRevealed) {
+                                // Re-masking: respect beRemaskLeaving flag and delay
+                                if (!config.beRemaskLeaving) continue;
+
+                                Map<BlockVector, Long> timers = remaskTimers
+                                        .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
+                                long now = System.currentTimeMillis();
+                                Long since = timers.putIfAbsent(bp, now);
+                                if (since == null) since = now;
+                                if (now - since < config.beRemaskDelayMs) continue;
+                                timers.remove(bp);
+                            }
 
                             Material ph = config.bePlaceholders.getOrDefault(real, Material.STONE);
                             p.sendBlockChange(blockLoc, Bukkit.createBlockData(ph));
                             maskState.setMasked(p.getUniqueId(), bp, true);
-                            timers.remove(bp);
                         }
                     }
                 }

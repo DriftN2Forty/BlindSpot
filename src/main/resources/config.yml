@@ -305,8 +305,7 @@ scanBlocks:
     DAMAGED_ANVIL: STONE
     COMPOSTER: AIR
     TRIPWIRE_HOOK: STONE
-    NETHER_PORTAL: STONE
-    STRING: STONE
+    NETHER_PORTAL: AIR
   materials:
     - BOOKSHELF
     - CRAFTING_TABLE
@@ -321,7 +320,6 @@ scanBlocks:
     - DAMAGED_ANVIL
     - TRIPWIRE_HOOK
     - NETHER_PORTAL
-    - STRING
 
 tpsGuard:
   enabled: true

@@ -51,7 +51,6 @@ final class MapChunkPacketHandler extends PacketListenerAbstract {
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!viewer.isOnline()) return;
-            if (!tpsGuard.allowHeavyWork()) return;
 
             Chunk chunk = viewer.getWorld().getChunkAt(chunkX, chunkZ);
             List<BlockVector> positions = beCache.getBlockEntityPositions(chunk);
