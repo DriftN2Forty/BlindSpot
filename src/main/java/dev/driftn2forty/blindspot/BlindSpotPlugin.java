@@ -98,7 +98,7 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(
                 new BlockChangeListener(this.pluginConfig, this.beCache, this.scanCache,
-                        this.deltaTracker), this);
+                        this.deltaTracker, this.raycastCache), this);
         Bukkit.getPluginManager().registerEvents(
                 new HangingChangeListener(this.pluginConfig, this.deltaTracker), this);
 

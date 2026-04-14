@@ -78,6 +78,11 @@ public final class RaycastCache {
         perPlayer.remove(playerId);
     }
 
+    /** Flush cached results for a player (e.g. when nearby blocks change). */
+    public void invalidate(UUID playerId) {
+        perPlayer.remove(playerId);
+    }
+
     private static int bucket(float angle) {
         return Math.floorDiv((int) angle, ANGLE_BUCKET);
     }

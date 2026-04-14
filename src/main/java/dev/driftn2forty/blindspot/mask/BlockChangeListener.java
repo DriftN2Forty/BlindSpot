@@ -2,6 +2,7 @@ package dev.driftn2forty.blindspot.mask;
 
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.proximity.PlayerDeltaTracker;
+import dev.driftn2forty.blindspot.proximity.RaycastCache;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -22,13 +23,16 @@ public final class BlockChangeListener implements Listener {
     private final BlockEntityCache beCache;
     private final BlockEntityCache scanCache;
     private final PlayerDeltaTracker deltaTracker;
+    private final RaycastCache raycastCache;
 
     public BlockChangeListener(PluginConfig config, BlockEntityCache beCache,
-                               BlockEntityCache scanCache, PlayerDeltaTracker deltaTracker) {
+                               BlockEntityCache scanCache, PlayerDeltaTracker deltaTracker,
+                               RaycastCache raycastCache) {
         this.config = config;
         this.beCache = beCache;
         this.scanCache = scanCache;
         this.deltaTracker = deltaTracker;
+        this.raycastCache = raycastCache;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -69,18 +73,15 @@ public final class BlockChangeListener implements Listener {
 
     private void invalidateIfTracked(Block block) {
         if (!config.enabled) return;
-        boolean invalidated = false;
         if (config.beEnabled && config.beMaskMaterials.contains(block.getType())) {
             beCache.invalidate(block.getChunk());
-            invalidated = true;
         }
         if (config.scanEnabled && config.scanMaterials.contains(block.getType())) {
             scanCache.invalidate(block.getChunk());
-            invalidated = true;
         }
-        if (invalidated) {
-            markNearbyPlayersDirty(block.getLocation());
-        }
+        // Any block change can affect LOS to hidden blocks/entities, so always
+        // dirty nearby players and flush their cached raycast results.
+        markNearbyPlayersDirty(block.getLocation());
     }
 
     private void invalidateChunkFor(Block block) {
@@ -92,11 +93,13 @@ public final class BlockChangeListener implements Listener {
     }
 
     private void markNearbyPlayersDirty(Location loc) {
-        double range = 48;
+        double range = Math.max(config.beLosMaxRevealDistance,
+                Math.max(config.entityLosMaxRevealDistance, config.scanLosMaxRevealDistance));
         double rangeSq = range * range;
         for (Player p : loc.getWorld().getPlayers()) {
             if (p.getLocation().distanceSquared(loc) <= rangeSq) {
                 deltaTracker.markDirty(p.getUniqueId());
+                raycastCache.invalidate(p.getUniqueId());
             }
         }
     }
