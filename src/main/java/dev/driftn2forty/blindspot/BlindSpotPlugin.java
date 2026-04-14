@@ -25,6 +25,8 @@ import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.List;
+
 public final class BlindSpotPlugin extends JavaPlugin {
 
     private PluginConfig pluginConfig;
@@ -41,7 +43,8 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private ChunkBlockCache scanCache;
     private BlockVisibilityService blockVisibilityService;
     private EntityScanCache entityScanCache;
-    private PlayerDeltaTracker deltaTracker;
+    private PlayerDeltaTracker beDeltaTracker;
+    private PlayerDeltaTracker scanDeltaTracker;
     private RaycastCache raycastCache;
 
     @Override
@@ -55,7 +58,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
         this.maskState = new PlayerMaskState();
         this.tpsGuard = new TpsGuard(this.pluginConfig);
         this.entityScanCache = new EntityScanCache();
-        this.deltaTracker = new PlayerDeltaTracker();
+        this.beDeltaTracker = new PlayerDeltaTracker();
+        this.scanDeltaTracker = new PlayerDeltaTracker();
+        List<PlayerDeltaTracker> allDeltaTrackers = List.of(this.beDeltaTracker, this.scanDeltaTracker);
 
         // bStats metrics
         Metrics metrics = new Metrics(this, 30722);
@@ -98,9 +103,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(
                 new BlockChangeListener(this.pluginConfig, this.beCache, this.scanCache,
-                        this.deltaTracker, this.raycastCache), this);
+                        allDeltaTrackers, this.raycastCache), this);
         Bukkit.getPluginManager().registerEvents(
-                new HangingChangeListener(this.pluginConfig, this.deltaTracker), this);
+                new HangingChangeListener(this.pluginConfig, allDeltaTrackers), this);
 
         this.entityVisibilityService = new EntityVisibilityService(this, this.pluginConfig,
                 this.proximityService, this.tpsGuard, this.entityScanCache);
@@ -115,13 +120,13 @@ public final class BlindSpotPlugin extends JavaPlugin {
         this.playerVisibilityService.start();
 
         this.blockEntityVisibilityService = new BlockEntityVisibilityService(this, this.pluginConfig, this.proximityService,
-                this.beCache, this.maskState, this.tpsGuard, this.deltaTracker);
+                this.beCache, this.maskState, this.tpsGuard, this.beDeltaTracker);
         this.blockEntityVisibilityService.start();
 
         if (this.nmsChunkScanner.isAvailable() && this.pluginConfig.scanEnabled) {
             this.blockVisibilityService = new BlockVisibilityService(this, this.pluginConfig,
                     this.proximityService, this.scanCache, this.maskState, this.tpsGuard,
-                    this.deltaTracker);
+                    this.scanDeltaTracker);
             this.blockVisibilityService.start();
         }
 

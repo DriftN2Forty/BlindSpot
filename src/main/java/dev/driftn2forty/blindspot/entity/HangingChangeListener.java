@@ -10,20 +10,21 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 
+import java.util.List;
+import java.util.UUID;
+
 /**
- * Marks nearby players as dirty in the {@link PlayerDeltaTracker} when an
- * item frame (or other hanging entity) is placed or removed. Without this,
- * stationary players would not re-check item-frame visibility until they
- * move or rotate.
+ * Marks nearby players as dirty in all {@link PlayerDeltaTracker} instances
+ * when an item frame (or other hanging entity) is placed or removed.
  */
 public final class HangingChangeListener implements Listener {
 
     private final PluginConfig config;
-    private final PlayerDeltaTracker deltaTracker;
+    private final List<PlayerDeltaTracker> deltaTrackers;
 
-    public HangingChangeListener(PluginConfig config, PlayerDeltaTracker deltaTracker) {
+    public HangingChangeListener(PluginConfig config, List<PlayerDeltaTracker> deltaTrackers) {
         this.config = config;
-        this.deltaTracker = deltaTracker;
+        this.deltaTrackers = deltaTrackers;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -42,7 +43,10 @@ public final class HangingChangeListener implements Listener {
         double rangeSq = range * range;
         for (Player p : loc.getWorld().getPlayers()) {
             if (p.getLocation().distanceSquared(loc) <= rangeSq) {
-                deltaTracker.markDirty(p.getUniqueId());
+                UUID id = p.getUniqueId();
+                for (PlayerDeltaTracker dt : deltaTrackers) {
+                    dt.markDirty(id);
+                }
             }
         }
     }

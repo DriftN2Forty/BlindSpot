@@ -17,21 +17,25 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 
+import java.util.List;
+import java.util.UUID;
+
 public final class BlockChangeListener implements Listener {
 
     private final PluginConfig config;
     private final BlockEntityCache beCache;
     private final BlockEntityCache scanCache;
-    private final PlayerDeltaTracker deltaTracker;
+    private final List<PlayerDeltaTracker> deltaTrackers;
     private final RaycastCache raycastCache;
 
     public BlockChangeListener(PluginConfig config, BlockEntityCache beCache,
-                               BlockEntityCache scanCache, PlayerDeltaTracker deltaTracker,
+                               BlockEntityCache scanCache,
+                               List<PlayerDeltaTracker> deltaTrackers,
                                RaycastCache raycastCache) {
         this.config = config;
         this.beCache = beCache;
         this.scanCache = scanCache;
-        this.deltaTracker = deltaTracker;
+        this.deltaTrackers = deltaTrackers;
         this.raycastCache = raycastCache;
     }
 
@@ -98,8 +102,11 @@ public final class BlockChangeListener implements Listener {
         double rangeSq = range * range;
         for (Player p : loc.getWorld().getPlayers()) {
             if (p.getLocation().distanceSquared(loc) <= rangeSq) {
-                deltaTracker.markDirty(p.getUniqueId());
-                raycastCache.invalidate(p.getUniqueId());
+                UUID id = p.getUniqueId();
+                for (PlayerDeltaTracker dt : deltaTrackers) {
+                    dt.markDirty(id);
+                }
+                raycastCache.invalidate(id);
             }
         }
     }
