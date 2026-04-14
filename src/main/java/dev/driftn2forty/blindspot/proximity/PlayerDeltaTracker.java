@@ -86,8 +86,10 @@ public final class PlayerDeltaTracker {
     public void markDirty(UUID playerId) {
         Snapshot s = snapshots.get(playerId);
         if (s != null) {
+            // Reset checkedTick so the next hasMoved() call re-evaluates
+            // instead of returning a stale cached result.
             snapshots.put(playerId, new Snapshot(s.x, s.y, s.z, s.yaw, s.pitch,
-                    true, s.checkedTick, s.moved));
+                    true, -1, false));
         }
         // If no snapshot exists, hasMoved() will return true on first call anyway.
     }

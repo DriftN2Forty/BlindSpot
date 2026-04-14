@@ -107,7 +107,7 @@ public final class BlindSpotPlugin extends JavaPlugin {
         this.entityVisibilityService.start();
 
         this.itemFrameVisibilityService = new ItemFrameVisibilityService(this, this.pluginConfig,
-                this.proximityService, this.tpsGuard, this.entityScanCache, this.deltaTracker);
+                this.proximityService, this.tpsGuard, this.entityScanCache);
         this.itemFrameVisibilityService.start();
 
         this.playerVisibilityService = new PlayerVisibilityService(this, this.pluginConfig,

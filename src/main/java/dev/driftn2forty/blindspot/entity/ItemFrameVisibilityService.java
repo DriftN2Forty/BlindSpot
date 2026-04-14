@@ -11,7 +11,6 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.guard.TpsThrottle;
-import dev.driftn2forty.blindspot.proximity.PlayerDeltaTracker;
 import dev.driftn2forty.blindspot.proximity.VisibilityChecker;
 import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bukkit.Bukkit;
@@ -46,7 +45,6 @@ public final class ItemFrameVisibilityService {
     private final VisibilityChecker proximity;
     private final TpsThrottle tpsGuard;
     private final EntityScanCache entityScanCache;
-    private final PlayerDeltaTracker deltaTracker;
 
     private BukkitTask task;
     private PacketListenerAbstract packetListener;
@@ -61,13 +59,12 @@ public final class ItemFrameVisibilityService {
 
     public ItemFrameVisibilityService(Plugin plugin, PluginConfig config,
                             VisibilityChecker proximity, TpsThrottle tpsGuard,
-                            EntityScanCache entityScanCache, PlayerDeltaTracker deltaTracker) {
+                            EntityScanCache entityScanCache) {
         this.plugin = plugin;
         this.config = config;
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
         this.entityScanCache = entityScanCache;
-        this.deltaTracker = deltaTracker;
     }
 
     // ── lifecycle ──────────────────────────────────────────────────
@@ -157,8 +154,6 @@ public final class ItemFrameVisibilityService {
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!p.isOnline() || !config.isWorldEnabled(p.getWorld())
                     || p.hasPermission(config.bypassPermission)) continue;
-
-            if (!deltaTracker.hasMoved(p)) continue;
 
             Map<Integer, UUID> suppressed = suppressedFrames
                     .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
