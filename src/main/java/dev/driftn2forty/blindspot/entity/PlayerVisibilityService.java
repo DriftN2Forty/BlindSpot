@@ -43,6 +43,7 @@ public final class PlayerVisibilityService {
     private final PluginConfig config;
     private final VisibilityChecker proximity;
     private final TpsThrottle tpsGuard;
+    private final EntityScanCache entityScanCache;
 
     private BukkitTask task;
     private PacketListenerAbstract packetListener;
@@ -57,11 +58,13 @@ public final class PlayerVisibilityService {
     private static final int NORMAL_INTERVAL = 10;
 
     public PlayerVisibilityService(Plugin plugin, PluginConfig config,
-                                   VisibilityChecker proximity, TpsThrottle tpsGuard) {
+                                   VisibilityChecker proximity, TpsThrottle tpsGuard,
+                                   EntityScanCache entityScanCache) {
         this.plugin = plugin;
         this.config = config;
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
+        this.entityScanCache = entityScanCache;
     }
 
     // ── lifecycle ──────────────────────────────────────────────────
@@ -180,7 +183,7 @@ public final class PlayerVisibilityService {
                 double scan = Math.max(48, config.entityLosMaxRevealDistance + 8);
                 Location observerLoc = observer.getLocation();
 
-                for (Entity e : observer.getNearbyEntities(scan, scan, scan)) {
+                for (Entity e : entityScanCache.getNearbyEntities(observer, scan)) {
                     if (e.getType() != EntityType.PLAYER) continue;
                     Player target = (Player) e;
 

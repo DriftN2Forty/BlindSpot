@@ -16,11 +16,13 @@ import org.bukkit.util.Vector;
 public final class ProximityService implements VisibilityChecker {
 
     private final PluginConfig config;
+    private final RaycastCache raycastCache;
     private final double beRevealRadiusSq;
     private final double entityRevealRadiusSq;
 
-    public ProximityService(PluginConfig config) {
+    public ProximityService(PluginConfig config, RaycastCache raycastCache) {
         this.config = config;
+        this.raycastCache = raycastCache;
         this.beRevealRadiusSq = (double) config.beRevealRadius * config.beRevealRadius;
         this.entityRevealRadiusSq = (double) config.entityRevealRadius * config.entityRevealRadius;
     }
@@ -272,41 +274,73 @@ public final class ProximityService implements VisibilityChecker {
     }
 
     public boolean isBlockVisible(Player viewer, BlockVector blockPos) {
+        Location eye = viewer.getEyeLocation();
+        Boolean cached = raycastCache.get(viewer.getUniqueId(),
+                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getYaw(), eye.getPitch(), blockPos);
+        if (cached != null) return cached;
+
         Location target = new Location(viewer.getWorld(),
                 blockPos.getBlockX(), blockPos.getBlockY(), blockPos.getBlockZ());
+        boolean result;
         switch (config.beMode) {
             case 1:
-                return withinBeReveal(viewer, target);
+                result = withinBeReveal(viewer, target);
+                break;
             case 2:
-                return hasLineOfSightToBlock(viewer, blockPos);
+                result = hasLineOfSightToBlock(viewer, blockPos);
+                break;
             case 3:
-                return withinBeReveal(viewer, target) || hasLineOfSightToBlock(viewer, blockPos);
+                result = withinBeReveal(viewer, target) || hasLineOfSightToBlock(viewer, blockPos);
+                break;
             default:
-                return hasLineOfSightToBlock(viewer, blockPos);
+                result = hasLineOfSightToBlock(viewer, blockPos);
+                break;
         }
+
+        raycastCache.put(viewer.getUniqueId(),
+                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getYaw(), eye.getPitch(), blockPos, result);
+        return result;
     }
 
     public boolean isScanBlockVisible(Player viewer, BlockVector blockPos) {
+        Location eye = viewer.getEyeLocation();
+        Boolean cached = raycastCache.get(viewer.getUniqueId(),
+                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getYaw(), eye.getPitch(), blockPos);
+        if (cached != null) return cached;
+
         Location target = new Location(viewer.getWorld(),
                 blockPos.getBlockX(), blockPos.getBlockY(), blockPos.getBlockZ());
         double scanRevealRadiusSq = (double) config.scanRevealRadius * config.scanRevealRadius;
+        boolean result;
         switch (config.scanMode) {
             case 1:
-                return withinReveal(viewer, target, scanRevealRadiusSq);
+                result = withinReveal(viewer, target, scanRevealRadiusSq);
+                break;
             case 2:
-                return hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
+                result = hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
                         config.scanBlockTraceMode, config.scanTraceModeFallbackDistance,
                         config.scanTraceModeFallbackDistanceSq);
+                break;
             case 3:
-                return withinReveal(viewer, target, scanRevealRadiusSq)
+                result = withinReveal(viewer, target, scanRevealRadiusSq)
                         || hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
                                 config.scanBlockTraceMode, config.scanTraceModeFallbackDistance,
                                 config.scanTraceModeFallbackDistanceSq);
+                break;
             default:
-                return hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
+                result = hasLosToBlock(viewer, blockPos, config.scanLosMaxRevealDistance,
                         config.scanBlockTraceMode, config.scanTraceModeFallbackDistance,
                         config.scanTraceModeFallbackDistanceSq);
+                break;
         }
+
+        raycastCache.put(viewer.getUniqueId(),
+                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getYaw(), eye.getPitch(), blockPos, result);
+        return result;
     }
 
     private boolean withinReveal(Player viewer, Location target, double radiusSq) {

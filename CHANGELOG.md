@@ -44,6 +44,11 @@
 - Moved `sendBlockChange()` out of `PlayerMaskState`, making it a pure state tracker with no Bukkit dependencies.
 - Extracted `MapChunkPacketHandler` and `TileEntityDataPacketHandler` from `BlockEntityMasker`, reducing it to a thin registration shell.
 
+### Performance
+- Added `EntityScanCache` — consolidates redundant `getNearbyEntities()` calls across `EntityVisibilityService`, `PlayerVisibilityService`, and `ItemFrameVisibilityService` into a single scan per player per server tick.
+- Added `RaycastCache` — short-TTL (6-tick) cache for `World.rayTraceBlocks()` results in `ProximityService`, keyed on player block position, look-direction bucket (5° granularity), and target block position. Auto-invalidates on block boundary crossing or significant rotation.
+- Added `PlayerDeltaTracker` — tracks player position/rotation snapshots and skips block-entity, scan-block, and item-frame visibility checks for stationary players. External dirtying via `BlockChangeListener` (block place/break) and `HangingChangeListener` (item frame place/break) ensures changes near stationary players are still detected.
+
 ### Architecture
 - Introduced `VisibilityChecker`, `MaskStateTracker`, `TpsThrottle`, and `BlockEntityCache` interfaces for all core services.
 - All downstream consumers (`BlockEntityMasker`, `BlockEntityVisibilityService`, `EntityVisibilityService`) now depend on interfaces instead of concrete types.

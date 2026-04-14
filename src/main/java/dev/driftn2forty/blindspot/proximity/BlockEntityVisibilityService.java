@@ -28,6 +28,7 @@ public final class BlockEntityVisibilityService {
     private final BlockEntityCache beCache;
     private final MaskStateTracker maskState;
     private final TpsThrottle tpsGuard;
+    private final PlayerDeltaTracker deltaTracker;
     private BukkitTask task;
     private final Map<UUID, Map<BlockVector, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final Map<UUID, Set<BlockVector>> revealedByPlayer = new ConcurrentHashMap<>();
@@ -37,13 +38,15 @@ public final class BlockEntityVisibilityService {
     private static final int NORMAL_INTERVAL = 8;
 
     public BlockEntityVisibilityService(Plugin plugin, PluginConfig config, VisibilityChecker proximity,
-                            BlockEntityCache beCache, MaskStateTracker maskState, TpsThrottle tpsGuard) {
+                            BlockEntityCache beCache, MaskStateTracker maskState, TpsThrottle tpsGuard,
+                            PlayerDeltaTracker deltaTracker) {
         this.plugin = plugin;
         this.config = config;
         this.proximity = proximity;
         this.beCache = beCache;
         this.maskState = maskState;
         this.tpsGuard = tpsGuard;
+        this.deltaTracker = deltaTracker;
     }
 
     public void start() {
@@ -84,6 +87,8 @@ public final class BlockEntityVisibilityService {
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!p.isOnline() || !config.isWorldEnabled(p.getWorld())
                     || p.hasPermission(config.bypassPermission)) continue;
+
+            if (!deltaTracker.hasMoved(p)) continue;
 
             Location loc = p.getLocation();
             int cx = loc.getBlockX() >> 4;

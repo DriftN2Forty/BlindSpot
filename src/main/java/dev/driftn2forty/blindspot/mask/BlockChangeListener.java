@@ -1,8 +1,11 @@
 package dev.driftn2forty.blindspot.mask;
 
 import dev.driftn2forty.blindspot.config.PluginConfig;
+import dev.driftn2forty.blindspot.proximity.PlayerDeltaTracker;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,11 +21,14 @@ public final class BlockChangeListener implements Listener {
     private final PluginConfig config;
     private final BlockEntityCache beCache;
     private final BlockEntityCache scanCache;
+    private final PlayerDeltaTracker deltaTracker;
 
-    public BlockChangeListener(PluginConfig config, BlockEntityCache beCache, BlockEntityCache scanCache) {
+    public BlockChangeListener(PluginConfig config, BlockEntityCache beCache,
+                               BlockEntityCache scanCache, PlayerDeltaTracker deltaTracker) {
         this.config = config;
         this.beCache = beCache;
         this.scanCache = scanCache;
+        this.deltaTracker = deltaTracker;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -63,21 +69,35 @@ public final class BlockChangeListener implements Listener {
 
     private void invalidateIfTracked(Block block) {
         if (!config.enabled) return;
+        boolean invalidated = false;
         if (config.beEnabled && config.beMaskMaterials.contains(block.getType())) {
             beCache.invalidate(block.getChunk());
+            invalidated = true;
         }
         if (config.scanEnabled && config.scanMaterials.contains(block.getType())) {
             scanCache.invalidate(block.getChunk());
+            invalidated = true;
+        }
+        if (invalidated) {
+            markNearbyPlayersDirty(block.getLocation());
         }
     }
 
-    /** Unconditionally invalidate the scan cache for a block's chunk (used when
-     *  the block type is changing, e.g. portal creation where incoming state
-     *  may be a tracked material). */
     private void invalidateChunkFor(Block block) {
         if (!config.enabled) return;
         if (config.scanEnabled) {
             scanCache.invalidate(block.getChunk());
+            markNearbyPlayersDirty(block.getLocation());
+        }
+    }
+
+    private void markNearbyPlayersDirty(Location loc) {
+        double range = 48;
+        double rangeSq = range * range;
+        for (Player p : loc.getWorld().getPlayers()) {
+            if (p.getLocation().distanceSquared(loc) <= rangeSq) {
+                deltaTracker.markDirty(p.getUniqueId());
+            }
         }
     }
 }

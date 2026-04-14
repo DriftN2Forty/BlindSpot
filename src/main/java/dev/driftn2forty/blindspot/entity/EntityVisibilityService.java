@@ -23,6 +23,7 @@ public final class EntityVisibilityService {
     private final PluginConfig config;
     private final VisibilityChecker proximity;
     private final TpsThrottle tpsGuard;
+    private final EntityScanCache entityScanCache;
     private BukkitTask task;
     private final Map<UUID, Set<UUID>> hiddenByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> remaskTimers = new ConcurrentHashMap<>();
@@ -30,11 +31,13 @@ public final class EntityVisibilityService {
     private final TickTimings timings = new TickTimings();
 
     public EntityVisibilityService(Plugin plugin, PluginConfig config,
-                                   VisibilityChecker proximity, TpsThrottle tpsGuard) {
+                                   VisibilityChecker proximity, TpsThrottle tpsGuard,
+                                   EntityScanCache entityScanCache) {
         this.plugin = plugin;
         this.config = config;
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
+        this.entityScanCache = entityScanCache;
     }
 
     public void start() {
@@ -98,7 +101,7 @@ public final class EntityVisibilityService {
                     k -> ConcurrentHashMap.newKeySet());
             double scan = Math.max(48, config.entityLosMaxRevealDistance + 8);
 
-            for (Entity e : p.getNearbyEntities(scan, scan, scan)) {
+            for (Entity e : entityScanCache.getNearbyEntities(p, scan)) {
                 if (e == p || !config.entitySuppressTypes.contains(e.getType())) continue;
                 if (e.getType() == EntityType.PLAYER) continue;
                 if (e.getType() == EntityType.ITEM_FRAME || e.getType() == EntityType.GLOW_ITEM_FRAME) continue;

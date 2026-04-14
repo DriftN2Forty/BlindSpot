@@ -2,7 +2,9 @@ package dev.driftn2forty.blindspot;
 
 import dev.driftn2forty.blindspot.command.ReloadCommand;
 import dev.driftn2forty.blindspot.config.PluginConfig;
+import dev.driftn2forty.blindspot.entity.EntityScanCache;
 import dev.driftn2forty.blindspot.entity.EntityVisibilityService;
+import dev.driftn2forty.blindspot.entity.HangingChangeListener;
 import dev.driftn2forty.blindspot.entity.ItemFrameVisibilityService;
 import dev.driftn2forty.blindspot.entity.PlayerVisibilityService;
 import dev.driftn2forty.blindspot.guard.TpsGuard;
@@ -14,7 +16,9 @@ import dev.driftn2forty.blindspot.mask.PlayerMaskState;
 import dev.driftn2forty.blindspot.nms.NmsChunkScanner;
 import dev.driftn2forty.blindspot.proximity.BlockEntityVisibilityService;
 import dev.driftn2forty.blindspot.proximity.BlockVisibilityService;
+import dev.driftn2forty.blindspot.proximity.PlayerDeltaTracker;
 import dev.driftn2forty.blindspot.proximity.ProximityService;
+import dev.driftn2forty.blindspot.proximity.RaycastCache;
 import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
@@ -36,16 +40,22 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private NmsChunkScanner nmsChunkScanner;
     private ChunkBlockCache scanCache;
     private BlockVisibilityService blockVisibilityService;
+    private EntityScanCache entityScanCache;
+    private PlayerDeltaTracker deltaTracker;
+    private RaycastCache raycastCache;
 
     @Override
     public void onEnable() {
 
         saveDefaultConfig();
         this.pluginConfig = new PluginConfig(this);
-        this.proximityService = new ProximityService(this.pluginConfig);
+        this.raycastCache = new RaycastCache();
+        this.proximityService = new ProximityService(this.pluginConfig, this.raycastCache);
         this.beCache = new ChunkBECache(this.pluginConfig);
         this.maskState = new PlayerMaskState();
         this.tpsGuard = new TpsGuard(this.pluginConfig);
+        this.entityScanCache = new EntityScanCache();
+        this.deltaTracker = new PlayerDeltaTracker();
 
         // bStats metrics
         Metrics metrics = new Metrics(this, 30722);
@@ -87,27 +97,31 @@ public final class BlindSpotPlugin extends JavaPlugin {
         this.scanCache = new ChunkBlockCache(this.pluginConfig, this.nmsChunkScanner);
 
         Bukkit.getPluginManager().registerEvents(
-                new BlockChangeListener(this.pluginConfig, this.beCache, this.scanCache), this);
+                new BlockChangeListener(this.pluginConfig, this.beCache, this.scanCache,
+                        this.deltaTracker), this);
+        Bukkit.getPluginManager().registerEvents(
+                new HangingChangeListener(this.pluginConfig, this.deltaTracker), this);
 
         this.entityVisibilityService = new EntityVisibilityService(this, this.pluginConfig,
-                this.proximityService, this.tpsGuard);
+                this.proximityService, this.tpsGuard, this.entityScanCache);
         this.entityVisibilityService.start();
 
         this.itemFrameVisibilityService = new ItemFrameVisibilityService(this, this.pluginConfig,
-                this.proximityService, this.tpsGuard);
+                this.proximityService, this.tpsGuard, this.entityScanCache, this.deltaTracker);
         this.itemFrameVisibilityService.start();
 
         this.playerVisibilityService = new PlayerVisibilityService(this, this.pluginConfig,
-                this.proximityService, this.tpsGuard);
+                this.proximityService, this.tpsGuard, this.entityScanCache);
         this.playerVisibilityService.start();
 
         this.blockEntityVisibilityService = new BlockEntityVisibilityService(this, this.pluginConfig, this.proximityService,
-                this.beCache, this.maskState, this.tpsGuard);
+                this.beCache, this.maskState, this.tpsGuard, this.deltaTracker);
         this.blockEntityVisibilityService.start();
 
         if (this.nmsChunkScanner.isAvailable() && this.pluginConfig.scanEnabled) {
             this.blockVisibilityService = new BlockVisibilityService(this, this.pluginConfig,
-                    this.proximityService, this.scanCache, this.maskState, this.tpsGuard);
+                    this.proximityService, this.scanCache, this.maskState, this.tpsGuard,
+                    this.deltaTracker);
             this.blockVisibilityService.start();
         }
 

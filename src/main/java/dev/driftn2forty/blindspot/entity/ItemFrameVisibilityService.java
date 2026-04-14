@@ -11,6 +11,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.guard.TpsThrottle;
+import dev.driftn2forty.blindspot.proximity.PlayerDeltaTracker;
 import dev.driftn2forty.blindspot.proximity.VisibilityChecker;
 import dev.driftn2forty.blindspot.util.TickTimings;
 import org.bukkit.Bukkit;
@@ -44,6 +45,8 @@ public final class ItemFrameVisibilityService {
     private final PluginConfig config;
     private final VisibilityChecker proximity;
     private final TpsThrottle tpsGuard;
+    private final EntityScanCache entityScanCache;
+    private final PlayerDeltaTracker deltaTracker;
 
     private BukkitTask task;
     private PacketListenerAbstract packetListener;
@@ -57,11 +60,14 @@ public final class ItemFrameVisibilityService {
     private static final int NORMAL_INTERVAL = 10;
 
     public ItemFrameVisibilityService(Plugin plugin, PluginConfig config,
-                            VisibilityChecker proximity, TpsThrottle tpsGuard) {
+                            VisibilityChecker proximity, TpsThrottle tpsGuard,
+                            EntityScanCache entityScanCache, PlayerDeltaTracker deltaTracker) {
         this.plugin = plugin;
         this.config = config;
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
+        this.entityScanCache = entityScanCache;
+        this.deltaTracker = deltaTracker;
     }
 
     // ── lifecycle ──────────────────────────────────────────────────
@@ -152,6 +158,8 @@ public final class ItemFrameVisibilityService {
             if (!p.isOnline() || !config.isWorldEnabled(p.getWorld())
                     || p.hasPermission(config.bypassPermission)) continue;
 
+            if (!deltaTracker.hasMoved(p)) continue;
+
             Map<Integer, UUID> suppressed = suppressedFrames
                     .computeIfAbsent(p.getUniqueId(), k -> new ConcurrentHashMap<>());
             Map<Integer, Long> timers = remaskTimers
@@ -160,7 +168,7 @@ public final class ItemFrameVisibilityService {
             double scan = Math.max(48, config.entityLosMaxRevealDistance + 8);
             Location playerLoc = p.getLocation();
 
-            for (Entity e : p.getNearbyEntities(scan, scan, scan)) {
+            for (Entity e : entityScanCache.getNearbyEntities(p, scan)) {
                 if (!FRAME_TYPES.contains(e.getType())) continue;
                 if (!config.entitySuppressTypes.contains(e.getType())) continue;
 
