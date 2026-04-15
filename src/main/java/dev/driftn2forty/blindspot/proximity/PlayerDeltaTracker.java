@@ -41,8 +41,9 @@ public final class PlayerDeltaTracker {
 
     /**
      * Returns {@code true} if the player has moved or rotated beyond
-     * threshold, or has been flagged dirty since the last call. Updates the
-     * stored snapshot on every call.
+     * threshold, or has been flagged dirty since the last call. Only updates
+     * the stored snapshot when returning {@code true}, so that small
+     * incremental movements accumulate against the last "work" position.
      */
     public boolean hasMoved(Player player) {
         if (sensitivity == 0) return true;
@@ -52,20 +53,27 @@ public final class PlayerDeltaTracker {
 
         Snapshot current = new Snapshot(loc.getX(), loc.getY(), loc.getZ(),
                 loc.getYaw(), loc.getPitch(), false);
-        snapshots.put(id, current);
 
-        if (prev == null || prev.dirty) return true;
+        if (prev == null || prev.dirty) {
+            snapshots.put(id, current);
+            return true;
+        }
 
         double dx = current.x - prev.x;
         double dy = current.y - prev.y;
         double dz = current.z - prev.z;
-        if (dx * dx + dy * dy + dz * dz > posThresholdSq) return true;
+        boolean moved = dx * dx + dy * dy + dz * dz > posThresholdSq;
 
-        float dYaw = Math.abs(current.yaw - prev.yaw);
-        if (dYaw > 180f) dYaw = 360f - dYaw;
-        if (dYaw > rotThreshold) return true;
+        if (!moved) {
+            float dYaw = Math.abs(current.yaw - prev.yaw);
+            if (dYaw > 180f) dYaw = 360f - dYaw;
+            moved = dYaw > rotThreshold || Math.abs(current.pitch - prev.pitch) > rotThreshold;
+        }
 
-        return Math.abs(current.pitch - prev.pitch) > rotThreshold;
+        if (moved) {
+            snapshots.put(id, current);
+        }
+        return moved;
     }
 
     /**
