@@ -19,14 +19,20 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class EntityScanCache {
 
+    private final boolean enabled;
     private final Map<UUID, List<Entity>> cache = new ConcurrentHashMap<>();
     private int lastTick = -1;
+
+    public EntityScanCache(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     /**
      * Returns the cached nearby-entity list for the given player, computing
      * it on the first call per server tick.
      */
     public List<Entity> getNearbyEntities(Player player, double range) {
+        if (!enabled) return player.getNearbyEntities(range, range, range);
         int currentTick = Bukkit.getCurrentTick();
         if (currentTick != lastTick) {
             cache.clear();

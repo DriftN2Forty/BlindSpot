@@ -52,14 +52,14 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
         saveDefaultConfig();
         this.pluginConfig = new PluginConfig(this);
-        this.raycastCache = new RaycastCache();
+        this.raycastCache = new RaycastCache(this.pluginConfig.perfRaycastCache);
         this.proximityService = new ProximityService(this.pluginConfig, this.raycastCache);
         this.beCache = new ChunkBECache(this.pluginConfig);
         this.maskState = new PlayerMaskState();
         this.tpsGuard = new TpsGuard(this.pluginConfig);
-        this.entityScanCache = new EntityScanCache();
-        this.beDeltaTracker = new PlayerDeltaTracker();
-        this.scanDeltaTracker = new PlayerDeltaTracker();
+        this.entityScanCache = new EntityScanCache(this.pluginConfig.perfEntityScanCache);
+        this.beDeltaTracker = new PlayerDeltaTracker(this.pluginConfig.perfDeltaTracker);
+        this.scanDeltaTracker = new PlayerDeltaTracker(this.pluginConfig.perfDeltaTracker);
         List<PlayerDeltaTracker> allDeltaTrackers = List.of(this.beDeltaTracker, this.scanDeltaTracker);
 
         // bStats metrics

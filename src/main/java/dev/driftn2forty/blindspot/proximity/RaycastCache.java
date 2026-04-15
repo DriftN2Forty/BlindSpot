@@ -26,13 +26,19 @@ public final class RaycastCache {
     /** Yaw/pitch are bucketed to this many degrees to allow minor rotations. */
     private static final int ANGLE_BUCKET = 5;
 
+    private final boolean enabled;
     private final Map<UUID, PlayerCache> perPlayer = new ConcurrentHashMap<>();
+
+    public RaycastCache(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     /**
      * Returns the cached visibility result, or {@code null} if not cached.
      */
     public Boolean get(UUID playerId, double eyeX, double eyeY, double eyeZ,
                        float yaw, float pitch, BlockVector blockPos) {
+        if (!enabled) return null;
         PlayerCache pc = perPlayer.get(playerId);
         if (pc == null) return null;
 
@@ -57,6 +63,7 @@ public final class RaycastCache {
      */
     public void put(UUID playerId, double eyeX, double eyeY, double eyeZ,
                     float yaw, float pitch, BlockVector blockPos, boolean visible) {
+        if (!enabled) return;
         int currentTick = Bukkit.getCurrentTick();
         int yBucket = bucket(yaw);
         int pBucket = bucket(pitch);

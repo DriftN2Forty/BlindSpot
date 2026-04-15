@@ -26,7 +26,12 @@ public final class PlayerDeltaTracker {
     private static final double POS_THRESHOLD_SQ = POS_THRESHOLD * POS_THRESHOLD;
     private static final float ROT_THRESHOLD = 2.0f;
 
+    private final boolean enabled;
     private final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
+
+    public PlayerDeltaTracker(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     /**
      * Returns {@code true} if the player has moved or rotated beyond
@@ -34,6 +39,7 @@ public final class PlayerDeltaTracker {
      * stored snapshot on every call.
      */
     public boolean hasMoved(Player player) {
+        if (!enabled) return true;
         UUID id = player.getUniqueId();
         Location loc = player.getLocation();
         Snapshot prev = snapshots.get(id);

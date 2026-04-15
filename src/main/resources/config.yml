@@ -397,6 +397,54 @@ losPassthrough:
 
 
 
+# Performance — optional caches and optimizations that reduce CPU usage at the
+# cost of very slightly delayed visibility updates (typically 1–2 extra ticks
+# before a block or entity is revealed after rounding a corner).
+#
+# These optimizations only affect Line of Sight checks (modes 2 and 3).
+# Proximity-only mode (mode 1) does not use raycasts or chunk scanning, so
+# these settings have no effect when all services are set to mode 1.
+#
+# All three are enabled by default. Disable individual optimizations here if
+# you notice unacceptable reveal delay on your server. Higher trace modes
+# (e.g. blockTraceMode: 4) reduce the negative visual effects of these optimizations.
+performance:
+
+  # entityScanCache — merges the expensive getNearbyEntities() Bukkit call
+  # across all entity services (entities, players, item frames) into a single
+  # scan per player per server tick. Without this, each service makes its own
+  # redundant scan.
+  # Only relevant when entities are using LOS (mode 2 or 3).
+  # Impact: significant CPU reduction on servers with many entities.
+  # Side effect: none visible to players.
+  entityScanCache: true
+
+  # raycastCache — caches World.rayTraceBlocks() results for a short window
+  # (6 ticks) keyed on player position (0.5-block granularity), look direction
+  # (5° buckets), and target block. Avoids re-casting identical rays when the
+  # player hasn't moved or turned significantly.
+  # Only relevant when block entities, entities, or scan blocks use LOS
+  # (mode 2 or 3).
+  # Impact: large CPU reduction with higher trace modes (3 and 4). Minimal
+  #         benefit with trace mode 1 (center only).
+  # Side effect: blocks/entities may take 1–2 extra ticks to reveal after
+  #              small movements. Least noticeable with trace mode 4.
+  raycastCache: true
+
+  # deltaTracker — tracks player position and look direction between service
+  # ticks. If a player hasn't moved (>0.1 blocks) or turned (>2°), block and
+  # scan-block visibility services skip the expensive chunk scan and raycast
+  # loop entirely. Block change events and item frame placement still force a
+  # re-check via a dirty flag.
+  # Only relevant when block entities or scan blocks use LOS (mode 2 or 3).
+  # Impact: eliminates all block/scan-block CPU for stationary or AFK players.
+  # Side effect: none under normal gameplay. Visibility updates are deferred
+  #              until the player moves or a nearby block changes.
+  deltaTracker: true
+
+
+
+
     
 tpsGuard:
   enabled: true

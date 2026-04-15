@@ -78,6 +78,10 @@ public final class PluginConfig {
     public Map<Material, Material> scanPlaceholders;
     public Set<Material> scanMaterials;
 
+    public boolean perfEntityScanCache;
+    public boolean perfRaycastCache;
+    public boolean perfDeltaTracker;
+
     public PluginConfig(Plugin plugin) {
         this.plugin = plugin;
         reload();
@@ -150,6 +154,10 @@ public final class PluginConfig {
         this.tpsGuardEnabled = cfg.getBoolean("tpsGuard.enabled", true);
         this.tpsGuardMin = cfg.getDouble("tpsGuard.minTps", 18.5);
         this.bypassPermission = cfg.getString("permissions.bypass", "blindspot.bypass");
+
+        this.perfEntityScanCache = cfg.getBoolean("performance.entityScanCache", true);
+        this.perfRaycastCache = cfg.getBoolean("performance.raycastCache", true);
+        this.perfDeltaTracker = cfg.getBoolean("performance.deltaTracker", true);
 
         this.ptBlocksEnabled = cfg.getBoolean("losPassthrough.enableBlocks", true);
         this.ptEntitiesEnabled = cfg.getBoolean("losPassthrough.enableEntities", true);
