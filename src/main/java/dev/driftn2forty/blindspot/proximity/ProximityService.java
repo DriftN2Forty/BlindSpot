@@ -276,7 +276,7 @@ public final class ProximityService implements VisibilityChecker {
     public boolean isBlockVisible(Player viewer, BlockVector blockPos) {
         Location eye = viewer.getEyeLocation();
         Boolean cached = raycastCache.get(viewer.getUniqueId(),
-                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getX(), eye.getY(), eye.getZ(),
                 eye.getYaw(), eye.getPitch(), blockPos);
         if (cached != null) return cached;
 
@@ -299,7 +299,7 @@ public final class ProximityService implements VisibilityChecker {
         }
 
         raycastCache.put(viewer.getUniqueId(),
-                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getX(), eye.getY(), eye.getZ(),
                 eye.getYaw(), eye.getPitch(), blockPos, result);
         return result;
     }
@@ -307,7 +307,7 @@ public final class ProximityService implements VisibilityChecker {
     public boolean isScanBlockVisible(Player viewer, BlockVector blockPos) {
         Location eye = viewer.getEyeLocation();
         Boolean cached = raycastCache.get(viewer.getUniqueId(),
-                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getX(), eye.getY(), eye.getZ(),
                 eye.getYaw(), eye.getPitch(), blockPos);
         if (cached != null) return cached;
 
@@ -338,7 +338,7 @@ public final class ProximityService implements VisibilityChecker {
         }
 
         raycastCache.put(viewer.getUniqueId(),
-                eye.getBlockX(), eye.getBlockY(), eye.getBlockZ(),
+                eye.getX(), eye.getY(), eye.getZ(),
                 eye.getYaw(), eye.getPitch(), blockPos, result);
         return result;
     }

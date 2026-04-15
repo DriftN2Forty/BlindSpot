@@ -31,7 +31,7 @@ public final class RaycastCache {
     /**
      * Returns the cached visibility result, or {@code null} if not cached.
      */
-    public Boolean get(UUID playerId, int playerBlockX, int playerBlockY, int playerBlockZ,
+    public Boolean get(UUID playerId, double eyeX, double eyeY, double eyeZ,
                        float yaw, float pitch, BlockVector blockPos) {
         PlayerCache pc = perPlayer.get(playerId);
         if (pc == null) return null;
@@ -42,8 +42,8 @@ public final class RaycastCache {
             return null;
         }
 
-        // Invalidate if player crossed a block boundary or rotated significantly
-        if (pc.blockX != playerBlockX || pc.blockY != playerBlockY || pc.blockZ != playerBlockZ
+        // Invalidate if player moved beyond half-block bucket or rotated significantly
+        if (pc.halfX != halfBlock(eyeX) || pc.halfY != halfBlock(eyeY) || pc.halfZ != halfBlock(eyeZ)
                 || pc.yawBucket != bucket(yaw) || pc.pitchBucket != bucket(pitch)) {
             perPlayer.remove(playerId);
             return null;
@@ -55,18 +55,20 @@ public final class RaycastCache {
     /**
      * Stores a visibility result in the cache.
      */
-    public void put(UUID playerId, int playerBlockX, int playerBlockY, int playerBlockZ,
+    public void put(UUID playerId, double eyeX, double eyeY, double eyeZ,
                     float yaw, float pitch, BlockVector blockPos, boolean visible) {
         int currentTick = Bukkit.getCurrentTick();
         int yBucket = bucket(yaw);
         int pBucket = bucket(pitch);
+        int hx = halfBlock(eyeX);
+        int hy = halfBlock(eyeY);
+        int hz = halfBlock(eyeZ);
 
         PlayerCache pc = perPlayer.get(playerId);
         if (pc == null || currentTick - pc.createdTick > TTL_TICKS
-                || pc.blockX != playerBlockX || pc.blockY != playerBlockY || pc.blockZ != playerBlockZ
+                || pc.halfX != hx || pc.halfY != hy || pc.halfZ != hz
                 || pc.yawBucket != yBucket || pc.pitchBucket != pBucket) {
-            pc = new PlayerCache(playerBlockX, playerBlockY, playerBlockZ,
-                    yBucket, pBucket, currentTick);
+            pc = new PlayerCache(hx, hy, hz, yBucket, pBucket, currentTick);
             perPlayer.put(playerId, pc);
         }
 
@@ -87,17 +89,22 @@ public final class RaycastCache {
         return Math.floorDiv((int) angle, ANGLE_BUCKET);
     }
 
+    /** Maps a coordinate to a half-block bucket (0.5-block granularity). */
+    private static int halfBlock(double coord) {
+        return (int) Math.floor(coord * 2);
+    }
+
     private static final class PlayerCache {
-        final int blockX, blockY, blockZ;
+        final int halfX, halfY, halfZ;
         final int yawBucket, pitchBucket;
         final int createdTick;
         final Map<BlockVector, Boolean> results = new HashMap<>();
 
-        PlayerCache(int blockX, int blockY, int blockZ,
+        PlayerCache(int halfX, int halfY, int halfZ,
                     int yawBucket, int pitchBucket, int createdTick) {
-            this.blockX = blockX;
-            this.blockY = blockY;
-            this.blockZ = blockZ;
+            this.halfX = halfX;
+            this.halfY = halfY;
+            this.halfZ = halfZ;
             this.yawBucket = yawBucket;
             this.pitchBucket = pitchBucket;
             this.createdTick = createdTick;

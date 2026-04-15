@@ -27,28 +27,37 @@ dependencies {
     testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
-tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-processing", "-Werror"))
-}
-
-tasks.processResources {
-    filesMatching("plugin.yml") {
-        expand("version" to project.version)
-    }
-}
-
-tasks.shadowJar {
-    configurations = project.configurations.runtimeClasspath.map { setOf(it) }
-
-    dependencies {
-        // Only merge bStats into the final jar, no other dependencies
-        exclude { it.moduleGroup != "org.bstats" }
+tasks {
+    
+    test {
+        useJUnitPlatform()
     }
 
-    // Relocate bStats into the plugin's package to avoid conflicts with other plugins using bStats
-    relocate("org.bstats", "${project.group}.blindspot.bstats")
+    withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-processing", "-Werror"))
+    }
+
+    processResources {
+        filesMatching("plugin.yml") {
+            expand("version" to project.version)
+        }
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+
+        configurations = project.configurations.runtimeClasspath.map { setOf(it) }
+
+        dependencies {
+            // Only merge bStats into the final jar, no other dependencies
+            exclude { it.moduleGroup != "org.bstats" }
+        }
+
+        // Relocate bStats into the plugin's package to avoid conflicts with other plugins using bStats
+        relocate("org.bstats", "${project.group}.blindspot.bstats")
+    }
+
+    build {
+        dependsOn(shadowJar)
+    }
 }
