@@ -88,6 +88,11 @@ public final class BlockEntityVisibilityService {
             if (!p.isOnline() || !config.isWorldEnabled(p.getWorld())
                     || p.hasPermission(config.bypassPermission)) continue;
 
+            // Always process expired remask timers, even for stationary players.
+            // The timer was already started when the block became not-visible;
+            // we don't need raycasts to know it should now be masked.
+            processExpiredRemaskTimers(p);
+
             if (!deltaTracker.hasMoved(p)) continue;
 
             Location loc = p.getLocation();
@@ -149,6 +154,43 @@ public final class BlockEntityVisibilityService {
         }
         } finally {
             timings.record(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     * Applies masks for any remask timers that have expired, without requiring
+     * a fresh visibility check. This runs for all players regardless of
+     * movement, so that stationary players still see blocks re-mask after the
+     * configured delay.
+     */
+    private void processExpiredRemaskTimers(Player p) {
+        Map<BlockVector, Long> timers = remaskTimers.get(p.getUniqueId());
+        if (timers == null || timers.isEmpty()) return;
+
+        long now = System.currentTimeMillis();
+        var it = timers.entrySet().iterator();
+        while (it.hasNext()) {
+            var entry = it.next();
+            if (now - entry.getValue() < config.beRemaskDelayMs) continue;
+
+            BlockVector bp = entry.getKey();
+            if (maskState.isMaskedFor(p.getUniqueId(), bp)) {
+                it.remove();
+                continue;
+            }
+
+            Location blockLoc = new Location(p.getWorld(),
+                    bp.getBlockX(), bp.getBlockY(), bp.getBlockZ());
+            Material real = blockLoc.getBlock().getType();
+            if (!config.beMaskMaterials.contains(real)) {
+                it.remove();
+                continue;
+            }
+
+            Material ph = config.bePlaceholders.getOrDefault(real, Material.STONE);
+            p.sendBlockChange(blockLoc, Bukkit.createBlockData(ph));
+            maskState.setMasked(p.getUniqueId(), bp, true);
+            it.remove();
         }
     }
 }
