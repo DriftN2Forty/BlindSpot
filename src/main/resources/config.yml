@@ -431,16 +431,17 @@ performance:
   #              small movements. Least noticeable with trace mode 4.
   raycastCache: true
 
-  # deltaTracker — tracks player position and look direction between service
-  # ticks. If a player hasn't moved (>0.1 blocks) or turned (>2°), block and
-  # scan-block visibility services skip the expensive chunk scan and raycast
-  # loop entirely. Block change events and item frame placement still force a
-  # re-check via a dirty flag.
+  # deltaTrackerSensitivity — controls how sensitive movement detection is
+  # for skipping block and scan-block visibility checks on stationary players.
+  # Block change events and item frame placement always force a re-check
+  # regardless of this setting.
   # Only relevant when block entities or scan blocks use LOS (mode 2 or 3).
-  # Impact: eliminates all block/scan-block CPU for stationary or AFK players.
-  # Side effect: none under normal gameplay. Visibility updates are deferred
-  #              until the player moves or a nearby block changes.
-  deltaTracker: true
+  #
+  # 0 = disabled (never skip — always re-check every tick)
+  # 1 = high sensitivity (skip only perfectly still players: >0.01 blocks / >0.5°)
+  # 2 = normal (default — skip if moved <0.1 blocks / <2°)
+  # 3 = low sensitivity (skip if moved <0.5 blocks / <5° — most aggressive savings)
+  deltaTrackerSensitivity: 2
 
 
 

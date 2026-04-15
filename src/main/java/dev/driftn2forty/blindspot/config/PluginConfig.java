@@ -80,7 +80,7 @@ public final class PluginConfig {
 
     public boolean perfEntityScanCache;
     public boolean perfRaycastCache;
-    public boolean perfDeltaTracker;
+    public int perfDeltaTrackerSensitivity;
 
     public PluginConfig(Plugin plugin) {
         this.plugin = plugin;
@@ -157,7 +157,7 @@ public final class PluginConfig {
 
         this.perfEntityScanCache = cfg.getBoolean("performance.entityScanCache", true);
         this.perfRaycastCache = cfg.getBoolean("performance.raycastCache", true);
-        this.perfDeltaTracker = cfg.getBoolean("performance.deltaTracker", true);
+        this.perfDeltaTrackerSensitivity = Math.max(0, Math.min(3, cfg.getInt("performance.deltaTrackerSensitivity", 2)));
 
         this.ptBlocksEnabled = cfg.getBoolean("losPassthrough.enableBlocks", true);
         this.ptEntitiesEnabled = cfg.getBoolean("losPassthrough.enableEntities", true);

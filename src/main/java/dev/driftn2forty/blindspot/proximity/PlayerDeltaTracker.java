@@ -12,25 +12,31 @@ import java.util.concurrent.ConcurrentHashMap;
  * player is stationary. Each consumer service should hold its own instance
  * so that snapshot updates are scoped to that service's tick interval.
  * <p>
- * A player is considered "moved" if their position shifted by more than
- * {@value #POS_THRESHOLD} blocks or their look direction changed by more
- * than {@value #ROT_THRESHOLD} degrees since the last snapshot.
- * <p>
+ * Sensitivity level controls the dead-zone thresholds:
+ * <ul>
+ *   <li><b>0</b> — disabled (always reports moved)</li>
+ *   <li><b>1</b> — high sensitivity (pos &gt; 0.01 blocks, rot &gt; 0.5°)</li>
+ *   <li><b>2</b> — normal (pos &gt; 0.1 blocks, rot &gt; 2°)</li>
+ *   <li><b>3</b> — low sensitivity (pos &gt; 0.5 blocks, rot &gt; 5°)</li>
+ * </ul>
  * External events (block changes, hanging entity changes) can flag a player
  * as dirty via {@link #markDirty(UUID)} to force a re-check even when the
  * player hasn't moved.
  */
 public final class PlayerDeltaTracker {
 
-    private static final double POS_THRESHOLD = 0.1;
-    private static final double POS_THRESHOLD_SQ = POS_THRESHOLD * POS_THRESHOLD;
-    private static final float ROT_THRESHOLD = 2.0f;
-
-    private final boolean enabled;
+    private final int sensitivity;
+    private final double posThresholdSq;
+    private final float rotThreshold;
     private final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
 
-    public PlayerDeltaTracker(boolean enabled) {
-        this.enabled = enabled;
+    public PlayerDeltaTracker(int sensitivity) {
+        this.sensitivity = Math.max(0, Math.min(3, sensitivity));
+        switch (this.sensitivity) {
+            case 1  -> { posThresholdSq = 0.01 * 0.01; rotThreshold = 0.5f; }
+            case 3  -> { posThresholdSq = 0.5 * 0.5;   rotThreshold = 5.0f; }
+            default -> { posThresholdSq = 0.1 * 0.1;    rotThreshold = 2.0f; } // 2 or 0 (0 short-circuits below)
+        }
     }
 
     /**
@@ -39,7 +45,7 @@ public final class PlayerDeltaTracker {
      * stored snapshot on every call.
      */
     public boolean hasMoved(Player player) {
-        if (!enabled) return true;
+        if (sensitivity == 0) return true;
         UUID id = player.getUniqueId();
         Location loc = player.getLocation();
         Snapshot prev = snapshots.get(id);
@@ -53,13 +59,13 @@ public final class PlayerDeltaTracker {
         double dx = current.x - prev.x;
         double dy = current.y - prev.y;
         double dz = current.z - prev.z;
-        if (dx * dx + dy * dy + dz * dz > POS_THRESHOLD_SQ) return true;
+        if (dx * dx + dy * dy + dz * dz > posThresholdSq) return true;
 
         float dYaw = Math.abs(current.yaw - prev.yaw);
         if (dYaw > 180f) dYaw = 360f - dYaw;
-        if (dYaw > ROT_THRESHOLD) return true;
+        if (dYaw > rotThreshold) return true;
 
-        return Math.abs(current.pitch - prev.pitch) > ROT_THRESHOLD;
+        return Math.abs(current.pitch - prev.pitch) > rotThreshold;
     }
 
     /**
