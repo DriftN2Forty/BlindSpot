@@ -204,8 +204,4 @@ public final class BlindSpotPlugin extends JavaPlugin {
     public TickTimings getBlockEntityTimings() {
         return blockEntityVisibilityService != null ? blockEntityVisibilityService.getTimings() : null;
     }
-
-    public TickTimings getScanBlockTimings() {
-        return blockVisibilityService != null ? blockVisibilityService.getTimings() : null;
-    }
 }

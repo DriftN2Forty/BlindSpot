@@ -73,62 +73,55 @@ public final class ReloadCommand implements CommandExecutor, TabCompleter {
 
         sender.sendMessage(Component.text("─── BlindSpot Timings ───", NamedTextColor.GOLD));
 
-        double totalMin = 0, totalMax = 0, totalAvg = 0;
+        double totalMax = 0, totalAvg = 0;
 
         double[] entityStats = printCombinedTimings(sender, "Entities", plugin.getEntityTimings());
-        totalMin += entityStats[0]; totalMax += entityStats[1]; totalAvg += entityStats[2];
+        totalMax += entityStats[0]; totalAvg += entityStats[1];
 
         TickTimings blocks = plugin.getBlockEntityTimings();
-        if (blocks != null && blocks.count() > 0) {
-            totalMin += blocks.minMs(); totalMax += blocks.maxMs(); totalAvg += blocks.averageMs();
+        if (blocks != null && blocks.hasData()) {
+            totalMax += blocks.maxMs(); totalAvg += blocks.amortizedAverageMs();
         }
         printTimings(sender, "Blocks", blocks);
 
         sender.sendMessage(Component.text("Total: ", NamedTextColor.WHITE)
-                .append(Component.text(String.format("min %.3fms", totalMin), NamedTextColor.AQUA))
+                .append(Component.text(String.format("avg %.3fms/tick", totalAvg), NamedTextColor.GREEN))
                 .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("max %.3fms", totalMax), NamedTextColor.YELLOW))
-                .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("avg %.3fms", totalAvg), NamedTextColor.GREEN)));
+                .append(Component.text(String.format("max %.3fms", totalMax), NamedTextColor.YELLOW)));
     }
 
-    /** Returns [min, max, avg] sums for the combined timings. */
+    /** Returns [max, avg] sums for the combined timings. */
     private double[] printCombinedTimings(CommandSender sender, String name, TickTimings[] timingsArray) {
-        double minSum = 0, maxSum = 0, avgSum = 0;
+        double maxSum = 0, avgSum = 0;
         boolean hasData = false;
         for (TickTimings t : timingsArray) {
-            if (t != null && t.count() > 0) {
-                minSum += t.minMs();
+            if (t != null && t.hasData()) {
                 maxSum += t.maxMs();
-                avgSum += t.averageMs();
+                avgSum += t.amortizedAverageMs();
                 hasData = true;
             }
         }
         if (!hasData) {
             sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
                     .append(Component.text("no data", NamedTextColor.GRAY)));
-            return new double[]{0, 0, 0};
+            return new double[]{0, 0};
         }
         sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
-                .append(Component.text(String.format("min %.3fms", minSum), NamedTextColor.AQUA))
+                .append(Component.text(String.format("avg %.3fms/tick", avgSum), NamedTextColor.GREEN))
                 .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("max %.3fms", maxSum), NamedTextColor.YELLOW))
-                .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("avg %.3fms", avgSum), NamedTextColor.GREEN)));
-        return new double[]{minSum, maxSum, avgSum};
+                .append(Component.text(String.format("max %.3fms", maxSum), NamedTextColor.YELLOW)));
+        return new double[]{maxSum, avgSum};
     }
 
     private void printTimings(CommandSender sender, String name, TickTimings timings) {
-        if (timings == null || timings.count() == 0) {
+        if (timings == null || !timings.hasData()) {
             sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
                     .append(Component.text("no data", NamedTextColor.GRAY)));
             return;
         }
         sender.sendMessage(Component.text(name + ": ", NamedTextColor.WHITE)
-                .append(Component.text(String.format("min %.3fms", timings.minMs()), NamedTextColor.AQUA))
+                .append(Component.text(String.format("avg %.3fms/tick", timings.amortizedAverageMs()), NamedTextColor.GREEN))
                 .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("max %.3fms", timings.maxMs()), NamedTextColor.YELLOW))
-                .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("avg %.3fms", timings.averageMs()), NamedTextColor.GREEN)));
+                .append(Component.text(String.format("max %.3fms", timings.maxMs()), NamedTextColor.YELLOW)));
     }
 }
