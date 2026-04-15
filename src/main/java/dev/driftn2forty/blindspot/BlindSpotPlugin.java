@@ -167,6 +167,11 @@ public final class BlindSpotPlugin extends JavaPlugin {
             this.scanCache.clear();
         }
 
+        // Update delta tracker sensitivity from reloaded config.
+        int sens = this.pluginConfig.perfDeltaTrackerSensitivity;
+        this.beDeltaTracker.setSensitivity(sens);
+        this.scanDeltaTracker.setSensitivity(sens);
+
         if (this.blockEntityMasker != null) {
             this.blockEntityMasker.unregister();
             this.blockEntityMasker.register();

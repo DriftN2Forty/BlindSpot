@@ -25,18 +25,24 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class PlayerDeltaTracker {
 
-    private final int sensitivity;
-    private final double posThresholdSq;
-    private final float rotThreshold;
+    private int sensitivity;
+    private double posThresholdSq;
+    private float rotThreshold;
     private final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
 
     public PlayerDeltaTracker(int sensitivity) {
+        setSensitivity(sensitivity);
+    }
+
+    /** Update thresholds from a new sensitivity level (0–3). */
+    public void setSensitivity(int sensitivity) {
         this.sensitivity = Math.max(0, Math.min(3, sensitivity));
         switch (this.sensitivity) {
             case 1  -> { posThresholdSq = 0.01 * 0.01; rotThreshold = 0.5f; }
             case 3  -> { posThresholdSq = 0.5 * 0.5;   rotThreshold = 5.0f; }
-            default -> { posThresholdSq = 0.1 * 0.1;    rotThreshold = 2.0f; } // 2 or 0 (0 short-circuits below)
+            default -> { posThresholdSq = 0.1 * 0.1;    rotThreshold = 2.0f; }
         }
+        snapshots.clear();
     }
 
     /**
