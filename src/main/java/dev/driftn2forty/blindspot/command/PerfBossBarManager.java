@@ -1,6 +1,7 @@
 package dev.driftn2forty.blindspot.command;
 
 import dev.driftn2forty.blindspot.BlindSpotPlugin;
+import dev.driftn2forty.blindspot.proximity.PlayerDeltaTracker;
 import dev.driftn2forty.blindspot.util.TickTimings;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -17,6 +18,11 @@ public final class PerfBossBarManager {
 
     private static final long UPDATE_INTERVAL = 20L; // 1 second
     private static final double TICK_BUDGET_MS = 50.0;
+    private static final int BAR_COUNT = 4; // total, breakdown, movement, rotation
+    private static final int IDX_TOTAL = 0;
+    private static final int IDX_BREAKDOWN = 1;
+    private static final int IDX_MOVEMENT = 2;
+    private static final int IDX_ROTATION = 3;
 
     private final BlindSpotPlugin plugin;
     private final Map<UUID, BossBar[]> viewers = new ConcurrentHashMap<>();
@@ -44,18 +50,25 @@ public final class PerfBossBarManager {
         BossBar breakdownBar = BossBar.bossBar(
                 Component.text("loading...", NamedTextColor.WHITE),
                 0f, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
+        BossBar movementBar = BossBar.bossBar(
+                Component.text("Movement: loading...", NamedTextColor.WHITE),
+                0f, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
+        BossBar rotationBar = BossBar.bossBar(
+                Component.text("Rotation: loading...", NamedTextColor.WHITE),
+                0f, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
 
         player.showBossBar(totalBar);
         player.showBossBar(breakdownBar);
-        viewers.put(player.getUniqueId(), new BossBar[]{totalBar, breakdownBar});
+        player.showBossBar(movementBar);
+        player.showBossBar(rotationBar);
+        viewers.put(player.getUniqueId(), new BossBar[]{totalBar, breakdownBar, movementBar, rotationBar});
         ensureTaskRunning();
     }
 
     private void removeBars(Player player) {
         BossBar[] bars = viewers.remove(player.getUniqueId());
         if (bars != null) {
-            player.hideBossBar(bars[0]);
-            player.hideBossBar(bars[1]);
+            for (BossBar bar : bars) player.hideBossBar(bar);
         }
         if (viewers.isEmpty()) stopTask();
     }
@@ -64,8 +77,7 @@ public final class PerfBossBarManager {
         for (var entry : viewers.entrySet()) {
             Player player = Bukkit.getPlayer(entry.getKey());
             if (player != null) {
-                player.hideBossBar(entry.getValue()[0]);
-                player.hideBossBar(entry.getValue()[1]);
+                for (BossBar bar : entry.getValue()) player.hideBossBar(bar);
             }
         }
         viewers.clear();
@@ -157,6 +169,18 @@ public final class PerfBossBarManager {
                 NamedTextColor.WHITE);
 
         // ── Update all viewers, prune disconnected ──
+        // Delta tracker info (shared thresholds — same sensitivity for both trackers)
+        PlayerDeltaTracker beDelta = plugin.getBeDeltaTracker();
+        int sens = beDelta.getSensitivity();
+        double posThreshold = beDelta.getPosThreshold();
+        float rotThreshold = beDelta.getRotThreshold();
+        String sensLabel = switch (sens) {
+            case 0 -> "OFF";
+            case 1 -> "High";
+            case 3 -> "Low";
+            default -> "Normal";
+        };
+
         var it = viewers.entrySet().iterator();
         while (it.hasNext()) {
             var entry = it.next();
@@ -166,12 +190,50 @@ public final class PerfBossBarManager {
                 continue;
             }
             BossBar[] bars = entry.getValue();
-            bars[0].name(bar1Title);
-            bars[0].progress(bar1Progress);
-            bars[0].color(bar1Color);
-            bars[1].name(bar2Title);
-            bars[1].progress(bar2Progress);
-            bars[1].color(bar2Color);
+            bars[IDX_TOTAL].name(bar1Title);
+            bars[IDX_TOTAL].progress(bar1Progress);
+            bars[IDX_TOTAL].color(bar1Color);
+            bars[IDX_BREAKDOWN].name(bar2Title);
+            bars[IDX_BREAKDOWN].progress(bar2Progress);
+            bars[IDX_BREAKDOWN].color(bar2Color);
+
+            // ── Per-player movement & rotation bars ──
+            if (sens == 0) {
+                bars[IDX_MOVEMENT].name(Component.text(
+                        "Movement: deltaTracker disabled (sensitivity 0)", NamedTextColor.GRAY));
+                bars[IDX_MOVEMENT].progress(0f);
+                bars[IDX_MOVEMENT].color(BossBar.Color.WHITE);
+                bars[IDX_ROTATION].name(Component.text(
+                        "Rotation: deltaTracker disabled (sensitivity 0)", NamedTextColor.GRAY));
+                bars[IDX_ROTATION].progress(0f);
+                bars[IDX_ROTATION].color(BossBar.Color.WHITE);
+            } else {
+                double[] delta = beDelta.getDelta(player);
+                double posDelta = (delta != null) ? delta[0] : 0;
+                double rotDelta = (delta != null) ? delta[1] : 0;
+
+                // Movement bar
+                float movePct = (float) Math.min(1.0, posDelta / posThreshold);
+                BossBar.Color moveColor = movePct >= 1.0f ? BossBar.Color.GREEN : BossBar.Color.WHITE;
+                String moveStatus = movePct >= 1.0f ? "RECALC" : "skip";
+                bars[IDX_MOVEMENT].name(Component.text(String.format(
+                        "Move: %.3f / %.3f blk [%s] (%s sens)",
+                        posDelta, posThreshold, moveStatus, sensLabel), 
+                        movePct >= 1.0f ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+                bars[IDX_MOVEMENT].progress(movePct);
+                bars[IDX_MOVEMENT].color(moveColor);
+
+                // Rotation bar
+                float rotPct = (float) Math.min(1.0, rotDelta / rotThreshold);
+                BossBar.Color rotColor = rotPct >= 1.0f ? BossBar.Color.GREEN : BossBar.Color.WHITE;
+                String rotStatus = rotPct >= 1.0f ? "RECALC" : "skip";
+                bars[IDX_ROTATION].name(Component.text(String.format(
+                        "Look: %.1f / %.1f° [%s] (%s sens)",
+                        rotDelta, rotThreshold, rotStatus, sensLabel),
+                        rotPct >= 1.0f ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+                bars[IDX_ROTATION].progress(rotPct);
+                bars[IDX_ROTATION].color(rotColor);
+            }
         }
 
         if (viewers.isEmpty()) stopTask();

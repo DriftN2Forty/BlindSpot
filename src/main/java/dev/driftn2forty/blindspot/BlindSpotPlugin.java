@@ -221,6 +221,14 @@ public final class BlindSpotPlugin extends JavaPlugin {
         return blockVisibilityService != null ? blockVisibilityService.getTimings() : null;
     }
 
+    public PlayerDeltaTracker getBeDeltaTracker() {
+        return beDeltaTracker;
+    }
+
+    public PlayerDeltaTracker getScanDeltaTracker() {
+        return scanDeltaTracker;
+    }
+
     public PerfBossBarManager getPerfBossBarManager() {
         return perfBossBarManager;
     }

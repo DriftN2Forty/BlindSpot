@@ -99,6 +99,43 @@ public final class PlayerDeltaTracker {
         snapshots.remove(playerId);
     }
 
+    /** Current sensitivity level (0–3). */
+    public int getSensitivity() {
+        return sensitivity;
+    }
+
+    /** Position threshold in blocks (linear, not squared). */
+    public double getPosThreshold() {
+        return Math.sqrt(posThresholdSq);
+    }
+
+    /** Rotation threshold in degrees. */
+    public float getRotThreshold() {
+        return rotThreshold;
+    }
+
+    /**
+     * Returns the player's current position delta (blocks) and rotation
+     * delta (degrees) relative to the last snapshot. Returns {@code null}
+     * if no snapshot exists for the player. Index 0 = position delta,
+     * index 1 = max rotation delta (yaw or pitch).
+     */
+    public double[] getDelta(Player player) {
+        if (sensitivity == 0) return null;
+        Snapshot prev = snapshots.get(player.getUniqueId());
+        if (prev == null) return null;
+        Location loc = player.getLocation();
+        double dx = loc.getX() - prev.x;
+        double dy = loc.getY() - prev.y;
+        double dz = loc.getZ() - prev.z;
+        double posDelta = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        float dYaw = Math.abs(loc.getYaw() - prev.yaw);
+        if (dYaw > 180f) dYaw = 360f - dYaw;
+        float dPitch = Math.abs(loc.getPitch() - prev.pitch);
+        double rotDelta = Math.max(dYaw, dPitch);
+        return new double[]{posDelta, rotDelta};
+    }
+
     private static final class Snapshot {
         final double x, y, z;
         final float yaw, pitch;
