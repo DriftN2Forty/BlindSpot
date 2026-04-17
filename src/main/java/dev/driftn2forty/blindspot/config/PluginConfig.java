@@ -82,6 +82,8 @@ public final class PluginConfig {
     public boolean perfRaycastCache;
     public int perfDeltaTrackerSensitivity;
 
+    public boolean autoReload;
+
     public PluginConfig(Plugin plugin) {
         this.plugin = plugin;
         reload();
@@ -158,6 +160,8 @@ public final class PluginConfig {
         this.perfEntityScanCache = cfg.getBoolean("performance.entityScanCache", true);
         this.perfRaycastCache = cfg.getBoolean("performance.raycastCache", true);
         this.perfDeltaTrackerSensitivity = Math.max(0, Math.min(3, cfg.getInt("performance.deltaTrackerSensitivity", 2)));
+
+        this.autoReload = cfg.getBoolean("autoReload", false);
 
         this.ptBlocksEnabled = cfg.getBoolean("losPassthrough.enableBlocks", true);
         this.ptEntitiesEnabled = cfg.getBoolean("losPassthrough.enableEntities", true);

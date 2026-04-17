@@ -2,6 +2,7 @@ package dev.driftn2forty.blindspot;
 
 import dev.driftn2forty.blindspot.command.PerfBossBarManager;
 import dev.driftn2forty.blindspot.command.ReloadCommand;
+import dev.driftn2forty.blindspot.config.ConfigFileWatcher;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.entity.EntityScanCache;
 import dev.driftn2forty.blindspot.entity.EntityVisibilityService;
@@ -48,6 +49,7 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private PlayerDeltaTracker scanDeltaTracker;
     private RaycastCache raycastCache;
     private PerfBossBarManager perfBossBarManager;
+    private ConfigFileWatcher configFileWatcher;
 
     @Override
     public void onEnable() {
@@ -134,6 +136,11 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
         this.perfBossBarManager = new PerfBossBarManager(this);
 
+        if (this.pluginConfig.autoReload) {
+            this.configFileWatcher = new ConfigFileWatcher(this, this::reloadBlindSpot);
+            this.configFileWatcher.start();
+        }
+
         ReloadCommand reloadCmd = new ReloadCommand(this);
         getCommand("blindspot").setExecutor(reloadCmd);
         getCommand("blindspot").setTabCompleter(reloadCmd);
@@ -142,6 +149,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.configFileWatcher != null) {
+            this.configFileWatcher.stop();
+        }
         if (this.perfBossBarManager != null) {
             this.perfBossBarManager.removeAll();
         }
@@ -198,6 +208,20 @@ public final class BlindSpotPlugin extends JavaPlugin {
         if (this.blockVisibilityService != null) {
             this.blockVisibilityService.restart();
         }
+
+        // Toggle config file watcher based on reloaded setting.
+        if (this.pluginConfig.autoReload) {
+            if (this.configFileWatcher == null) {
+                this.configFileWatcher = new ConfigFileWatcher(this, this::reloadBlindSpot);
+                this.configFileWatcher.start();
+            }
+        } else {
+            if (this.configFileWatcher != null) {
+                this.configFileWatcher.stop();
+                this.configFileWatcher = null;
+            }
+        }
+
         getLogger().info("BlindSpot config reloaded.");
     }
 

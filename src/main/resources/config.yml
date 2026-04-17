@@ -456,3 +456,10 @@ permissions:
 
 debug:
   verbose: false
+
+# Auto-reload — automatically reloads the config when config.yml is modified.
+# Useful with /blindspot performanceMonitor to see the impact of changes in
+# real time without running /blindspot reload manually.
+# A 1-second delay is applied after detecting a file change to ensure the
+# file has finished saving before reading it.
+autoReload: false
