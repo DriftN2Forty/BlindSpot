@@ -52,7 +52,7 @@ public final class PlayerVisibilityService {
     private final Map<UUID, Map<Integer, UUID>> suppressedPlayers = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Integer, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> revealedByPlayer = new ConcurrentHashMap<>();
-    private final TickTimings timings = new TickTimings();
+    private TickTimings timings;
     private int tickCounter;
     private int fullTickEvery;
     private static final int NORMAL_INTERVAL = 10;
@@ -65,6 +65,7 @@ public final class PlayerVisibilityService {
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
         this.entityScanCache = entityScanCache;
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
     }
 
     // ── lifecycle ──────────────────────────────────────────────────
@@ -116,6 +117,7 @@ public final class PlayerVisibilityService {
         task = null;
         remaskTimers.clear();
         revealedByPlayer.clear();
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
 
         if (!config.enabled || !config.entityEnabled
                 || !config.entitySuppressTypes.contains(EntityType.PLAYER)) {

@@ -443,6 +443,12 @@ performance:
   # 3 = low sensitivity (skip if moved <0.5 blocks / <5° — most aggressive savings)
   deltaTrackerSensitivity: 2
 
+  # timingsWindowSeconds — rolling window length (in seconds) for the TickTimings
+  # data used by /blindspot timings and /blindspot performanceMonitor boss bars.
+  # Shorter windows (e.g. 5) react faster to changes — useful for solo testing.
+  # Longer windows (e.g. 30–60) smooth out spikes — better for busy servers.
+  timingsWindowSeconds: 20
+
 
 
 

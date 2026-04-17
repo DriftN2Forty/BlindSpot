@@ -28,7 +28,7 @@ public final class EntityVisibilityService {
     private final Map<UUID, Set<UUID>> hiddenByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> revealedByPlayer = new ConcurrentHashMap<>();
-    private final TickTimings timings = new TickTimings();
+    private TickTimings timings;
 
     public EntityVisibilityService(Plugin plugin, PluginConfig config,
                                    VisibilityChecker proximity, TpsThrottle tpsGuard,
@@ -38,6 +38,7 @@ public final class EntityVisibilityService {
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
         this.entityScanCache = entityScanCache;
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
     }
 
     public void start() {
@@ -58,6 +59,7 @@ public final class EntityVisibilityService {
         task = null;
         remaskTimers.clear();
         revealedByPlayer.clear();
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
 
         if (!config.enabled || !config.entityEnabled) {
             revealAll();

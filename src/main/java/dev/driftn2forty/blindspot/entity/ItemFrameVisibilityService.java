@@ -52,7 +52,7 @@ public final class ItemFrameVisibilityService {
     /** player UUID → (entity ID → entity UUID) for suppressed item frames */
     private final Map<UUID, Map<Integer, UUID>> suppressedFrames = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Integer, Long>> remaskTimers = new ConcurrentHashMap<>();
-    private final TickTimings timings = new TickTimings();
+    private TickTimings timings;
     private int tickCounter;
     private int fullTickEvery;
     private static final int NORMAL_INTERVAL = 10;
@@ -65,6 +65,7 @@ public final class ItemFrameVisibilityService {
         this.proximity = proximity;
         this.tpsGuard = tpsGuard;
         this.entityScanCache = entityScanCache;
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
     }
 
     // ── lifecycle ──────────────────────────────────────────────────
@@ -107,6 +108,7 @@ public final class ItemFrameVisibilityService {
         if (task != null) task.cancel();
         task = null;
         remaskTimers.clear();
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
 
         boolean hasFrameTypes = false;
         for (EntityType t : FRAME_TYPES) {

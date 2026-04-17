@@ -35,7 +35,7 @@ public final class BlockVisibilityService {
     private final PlayerDeltaTracker deltaTracker;
     private BukkitTask task;
     private final Map<UUID, Map<BlockVector, Long>> remaskTimers = new ConcurrentHashMap<>();
-    private final TickTimings timings = new TickTimings();
+    private TickTimings timings;
     private int tickCounter;
     private int fullTickEvery;
     private static final int NORMAL_INTERVAL = 8;
@@ -50,6 +50,7 @@ public final class BlockVisibilityService {
         this.maskState = maskState;
         this.tpsGuard = tpsGuard;
         this.deltaTracker = deltaTracker;
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
     }
 
     public void start() {
@@ -68,6 +69,7 @@ public final class BlockVisibilityService {
         if (task != null) task.cancel();
         task = null;
         remaskTimers.clear();
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
         if (!config.enabled || !config.scanEnabled) return;
         this.tickCounter = 0;
         this.fullTickEvery = (NORMAL_INTERVAL + config.scanHighPriorityInterval - 1) / config.scanHighPriorityInterval;

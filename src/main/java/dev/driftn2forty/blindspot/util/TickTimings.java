@@ -5,10 +5,10 @@ import java.util.Arrays;
 /**
  * Rolling-window timing recorder for a single scheduled task.
  * <p>
- * Uses 20 one-second buckets in a ring buffer. Old buckets rotate out
- * continuously, so {@link #amortizedAverageMs()} and {@link #maxMs()}
- * always reflect the most recent 20 seconds of data without stale
- * snapshots. This gives a smooth, truly rolling average suitable for
+ * Uses one-second buckets in a ring buffer (default 20, configurable).
+ * Old buckets rotate out continuously, so {@link #amortizedAverageMs()}
+ * and {@link #maxMs()} always reflect the most recent N seconds of data
+ * without stale snapshots. This gives a smooth, truly rolling average suitable for
  * live displays (boss bars) and one-shot commands alike.
  * <p>
  * <strong>Amortized average</strong> = total execution time across the
@@ -18,16 +18,28 @@ import java.util.Arrays;
  */
 public final class TickTimings {
 
-    private static final int BUCKET_COUNT = 20;                       // 20 seconds of history
     private static final long BUCKET_NANOS = 1_000_000_000L;         // 1 second per bucket
     private static final long NANOS_PER_TICK = 50_000_000L;          // 50 ms at 20 TPS
 
-    private final long[] bucketExec = new long[BUCKET_COUNT];
-    private final long[] bucketMax = new long[BUCKET_COUNT];
+    private final int bucketCount;
+    private final long[] bucketExec;
+    private final long[] bucketMax;
     private long bucketStart;   // nanoTime when the current head bucket began
     private int head;           // index of the current (newest) bucket
-    private int filled;         // number of buckets that have received data (1..BUCKET_COUNT)
+    private int filled;         // number of buckets that have received data (1..bucketCount)
     private boolean hasData;
+
+    /** Creates a TickTimings with the given window size in seconds (one bucket per second). */
+    public TickTimings(int windowSeconds) {
+        this.bucketCount = Math.max(1, windowSeconds);
+        this.bucketExec = new long[bucketCount];
+        this.bucketMax = new long[bucketCount];
+    }
+
+    /** Creates a TickTimings with a default 20-second window. */
+    public TickTimings() {
+        this(20);
+    }
 
     /** Record one execution duration in nanoseconds. */
     public void record(long nanos) {
@@ -64,6 +76,11 @@ public final class TickTimings {
         return (totalExec / (double) ticks) / 1_000_000.0;
     }
 
+    /** Returns the configured window size in seconds. */
+    public int getWindowSeconds() {
+        return bucketCount;
+    }
+
     /** Maximum single-execution time in milliseconds across the window. */
     public double maxMs() {
         if (!hasData) return 0;
@@ -89,14 +106,14 @@ public final class TickTimings {
         long elapsed = now - bucketStart;
         int steps = (int) (elapsed / BUCKET_NANOS);
         if (steps <= 0) return;
-        steps = Math.min(steps, BUCKET_COUNT);
+        steps = Math.min(steps, bucketCount);
         for (int i = 0; i < steps; i++) {
-            head = (head + 1) % BUCKET_COUNT;
+            head = (head + 1) % bucketCount;
             bucketExec[head] = 0;
             bucketMax[head] = 0;
         }
         bucketStart += steps * BUCKET_NANOS;
-        filled = Math.min(BUCKET_COUNT, filled + steps);
+        filled = Math.min(bucketCount, filled + steps);
     }
 
     private void clearAll() {

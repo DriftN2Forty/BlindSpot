@@ -32,7 +32,7 @@ public final class BlockEntityVisibilityService {
     private BukkitTask task;
     private final Map<UUID, Map<BlockVector, Long>> remaskTimers = new ConcurrentHashMap<>();
     private final Map<UUID, Set<BlockVector>> revealedByPlayer = new ConcurrentHashMap<>();
-    private final TickTimings timings = new TickTimings();
+    private TickTimings timings;
     private int tickCounter;
     private int fullTickEvery;
     private static final int NORMAL_INTERVAL = 8;
@@ -47,6 +47,7 @@ public final class BlockEntityVisibilityService {
         this.maskState = maskState;
         this.tpsGuard = tpsGuard;
         this.deltaTracker = deltaTracker;
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
     }
 
     public void start() {
@@ -67,6 +68,7 @@ public final class BlockEntityVisibilityService {
         task = null;
         remaskTimers.clear();
         revealedByPlayer.clear();
+        this.timings = new TickTimings(config.perfTimingsWindowSeconds);
         if (!config.enabled || !config.beEnabled) return;
         this.tickCounter = 0;
         this.fullTickEvery = (NORMAL_INTERVAL + config.beHighPriorityInterval - 1) / config.beHighPriorityInterval;
