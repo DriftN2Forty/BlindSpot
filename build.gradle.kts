@@ -23,9 +23,12 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("com.github.retrooper:packetevents-spigot:2.12.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.mockito:mockito-core:5.14.2")
     testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
 }
+
+val runtimeClasspath = configurations.runtimeClasspath
 
 tasks {
     
@@ -46,7 +49,7 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
 
-        configurations = project.configurations.runtimeClasspath.map { setOf(it) }
+        configurations = runtimeClasspath.map { setOf(it) }
 
         dependencies {
             // Only merge bStats into the final jar, no other dependencies
