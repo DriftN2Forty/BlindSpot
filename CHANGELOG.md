@@ -3,6 +3,7 @@
 ## 1.0.0
 
 ### Features
+- Added `/blindspot performanceMonitor` — toggles two live boss bars showing real-time performance data. Bar 1 shows total BlindSpot cost as ms/tick and tick-budget percentage alongside server MSPT and effective TPS (via Paper's ~5-second rolling average). Bar 2 breaks down per-subsystem cost (entities, block entities, scan blocks) with peak-spike tracking. Bar colors shift from green → yellow → red as budget usage increases. Requires `blindspot.timings` permission.
 - Added all 16 bed colors (white through black) to default `blockEntities.maskMaterials` and placeholders.
 - Added `TRIPWIRE` and `LEVER` to default `scanBlocks.materials` and placeholders.
 - Added `scanBlocks` system for masking non-block-entity blocks (crafting tables, grindstones, anvils, looms, etc.) that can't be discovered via `Chunk.getTileEntities()`. Uses NMS reflection to access chunk section palettes for O(1) filtering — only sections whose palette contains a target material are fully scanned. Requires Paper 1.20.5+ with Mojang mappings; logs a warning and disables gracefully on unsupported servers.

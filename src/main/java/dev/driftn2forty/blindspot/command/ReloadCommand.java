@@ -8,6 +8,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,9 @@ public final class ReloadCommand implements CommandExecutor, TabCompleter {
             if (sender.hasPermission("blindspot.timings") && "timings".startsWith(args[0].toLowerCase())) {
                 completions.add("timings");
             }
+            if (sender.hasPermission("blindspot.timings") && "performancemonitor".startsWith(args[0].toLowerCase())) {
+                completions.add("performanceMonitor");
+            }
             return completions;
         }
         return Collections.emptyList();
@@ -39,14 +43,15 @@ public final class ReloadCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(Component.text("Usage: /blindspot <reload|timings>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /blindspot <reload|timings|performanceMonitor>", NamedTextColor.YELLOW));
             return true;
         }
 
         switch (args[0].toLowerCase()) {
             case "reload" -> handleReload(sender);
             case "timings" -> handleTimings(sender);
-            default -> sender.sendMessage(Component.text("Usage: /blindspot <reload|timings>", NamedTextColor.YELLOW));
+            case "performancemonitor" -> handlePerformanceMonitor(sender);
+            default -> sender.sendMessage(Component.text("Usage: /blindspot <reload|timings|performanceMonitor>", NamedTextColor.YELLOW));
         }
         return true;
     }
@@ -111,6 +116,21 @@ public final class ReloadCommand implements CommandExecutor, TabCompleter {
                 .append(Component.text(" | ", NamedTextColor.GRAY))
                 .append(Component.text(String.format("max %.3fms", maxSum), NamedTextColor.YELLOW)));
         return new double[]{maxSum, avgSum};
+    }
+
+    private void handlePerformanceMonitor(CommandSender sender) {
+        if (!sender.hasPermission("blindspot.timings")) {
+            sender.sendMessage(Component.text("You don't have permission.", NamedTextColor.RED));
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("This command can only be used by players.", NamedTextColor.RED));
+            return;
+        }
+        boolean enabled = plugin.getPerfBossBarManager().toggle(player);
+        sender.sendMessage(Component.text(
+                enabled ? "Performance monitor enabled." : "Performance monitor disabled.",
+                enabled ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
     }
 
     private void printTimings(CommandSender sender, String name, TickTimings timings) {

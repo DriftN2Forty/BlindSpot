@@ -1,5 +1,6 @@
 package dev.driftn2forty.blindspot;
 
+import dev.driftn2forty.blindspot.command.PerfBossBarManager;
 import dev.driftn2forty.blindspot.command.ReloadCommand;
 import dev.driftn2forty.blindspot.config.PluginConfig;
 import dev.driftn2forty.blindspot.entity.EntityScanCache;
@@ -46,6 +47,7 @@ public final class BlindSpotPlugin extends JavaPlugin {
     private PlayerDeltaTracker beDeltaTracker;
     private PlayerDeltaTracker scanDeltaTracker;
     private RaycastCache raycastCache;
+    private PerfBossBarManager perfBossBarManager;
 
     @Override
     public void onEnable() {
@@ -130,6 +132,8 @@ public final class BlindSpotPlugin extends JavaPlugin {
             this.blockVisibilityService.start();
         }
 
+        this.perfBossBarManager = new PerfBossBarManager(this);
+
         ReloadCommand reloadCmd = new ReloadCommand(this);
         getCommand("blindspot").setExecutor(reloadCmd);
         getCommand("blindspot").setTabCompleter(reloadCmd);
@@ -138,6 +142,9 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.perfBossBarManager != null) {
+            this.perfBossBarManager.removeAll();
+        }
         if (this.blockEntityMasker != null) {
             this.blockEntityMasker.unregister();
         }
@@ -208,5 +215,13 @@ public final class BlindSpotPlugin extends JavaPlugin {
 
     public TickTimings getBlockEntityTimings() {
         return blockEntityVisibilityService != null ? blockEntityVisibilityService.getTimings() : null;
+    }
+
+    public TickTimings getScanBlockTimings() {
+        return blockVisibilityService != null ? blockVisibilityService.getTimings() : null;
+    }
+
+    public PerfBossBarManager getPerfBossBarManager() {
+        return perfBossBarManager;
     }
 }
